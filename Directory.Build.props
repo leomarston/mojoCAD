@@ -26,10 +26,18 @@
       AutoCAD loads managed plugins into its own AppDomain. We never want our
       build to drag AutoCAD's own assemblies (acmgd, acdbmgd, accoremgd,
       AdWindows) into the output folder - they are provided by the running
-      AutoCAD process. Projects that reference AutoCAD set <Private>false</Private>
-      / ExcludeAssets=runtime on those references (see MojoCad.Acad.csproj).
+      AutoCAD process. That exclusion is done per-package on the AutoCAD
+      references via ExcludeAssets=runtime (see MojoCad.Acad/Plugin .csproj).
+
+      We DO want every OTHER runtime dependency (System.Text.Json,
+      CommunityToolkit.Mvvm, Microsoft.Bcl.AsyncInterfaces, the project DLLs)
+      flattened into the plugin's output folder, because AutoCAD loads the
+      plugin DLL and probes its folder - there is no host deps.json resolution.
+      So CopyLocalLockFileAssemblies is TRUE: the full runtime closure (minus
+      the runtime-excluded AutoCAD assemblies) lands next to MojoCad.Plugin.dll
+      and the bundle is self-contained.
     -->
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 

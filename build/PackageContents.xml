@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AutoCAD Autoloader manifest. When this bundle folder is placed at
+    %APPDATA%\Autodesk\ApplicationPlugins\mojoCAD.bundle\
+  AutoCAD discovers it on startup and (because LoadOnAutoCADStartup="True")
+  loads the matching MojoCad.Plugin.dll automatically - no NETLOAD needed.
+
+  Two components are declared so one bundle serves both eras of AutoCAD:
+    - .NET 8 build   -> AutoCAD 2025+  (release R25.0 and up)
+    - .NET 4.8 build -> AutoCAD 2021-2024 (releases R24.0 - R24.3)
+  RuntimeRequirements/SeriesMin/SeriesMax gate which DLL each AutoCAD loads.
+  install.ps1 prunes any component whose DLL was not built.
+-->
+<ApplicationPackage SchemaVersion="1.0"
+                    AppVersion="0.1.0"
+                    ProductCode="{8F2A6C10-7D4B-4E2A-9C31-0A1B2C3D4E5F}"
+                    Author="mojoCAD"
+                    Name="mojoCAD"
+                    Description="mojoCAD - Cursor for AutoCAD. An AI design copilot that proposes precise, reviewable CAD edits via OpenRouter."
+                    AutodeskProduct="AutoCAD"
+                    ProductType="Application"
+                    HelpFile="./Contents/README.txt">
+
+  <CompanyDetails Name="mojoCAD" Url="https://mojocad.app" Email="" />
+
+  <!-- AutoCAD 2025+ : .NET 8 -->
+  <Components Description="mojoCAD for AutoCAD 2025 and later (.NET 8)">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R25.0" />
+    <ComponentEntry AppName="mojoCAD"
+                    Version="0.1.0"
+                    ModuleName="./Contents/net8.0-windows/MojoCad.Plugin.dll"
+                    AppDescription="mojoCAD AI design copilot"
+                    LoadOnAutoCADStartup="True">
+      <Commands GroupName="MOJO">
+        <Command Global="MOJO"     Local="MOJO" />
+        <Command Global="MOJOCHAT" Local="MOJOCHAT" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+
+  <!-- AutoCAD 2021-2024 : .NET Framework 4.8 -->
+  <Components Description="mojoCAD for AutoCAD 2021-2024 (.NET Framework 4.8)">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R24.0" SeriesMax="R24.3" />
+    <ComponentEntry AppName="mojoCAD"
+                    Version="0.1.0"
+                    ModuleName="./Contents/net48/MojoCad.Plugin.dll"
+                    AppDescription="mojoCAD AI design copilot"
+                    LoadOnAutoCADStartup="True">
+      <Commands GroupName="MOJO">
+        <Command Global="MOJO"     Local="MOJO" />
+        <Command Global="MOJOCHAT" Local="MOJOCHAT" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+
+</ApplicationPackage>

@@ -101,19 +101,28 @@ mojoCAD ships a single multi-targeted codebase; the managed ObjectARX API surfac
 
 ## Quick start
 
-1. **Build** the solution (see [`docs/BUILD.md`](docs/BUILD.md) for prerequisites and the AutoCAD package versions):
-   ```
-   dotnet build mojoCAD.sln -c Release
-   ```
-   Build the target framework that matches your AutoCAD release (`net8.0-windows` for 2025+, `net48` for 2021–2024).
+> AutoCAD plugins are compiled .NET DLLs, so mojoCAD is built **once** and then
+> installed as an AutoCAD **Autoloader bundle** that loads automatically on every
+> startup — you never run `NETLOAD` again. See [`docs/INSTALL.md`](docs/INSTALL.md).
 
-2. **Load the plugin.** In AutoCAD, run `NETLOAD` and select `MojoCad.Plugin.dll` from the build output.
+**The one-step install (Windows):**
 
-3. **Open the palette.** Type `MOJO` (toggle) or `MOJOCHAT` (show) at the command line. The dockable chat palette appears.
+1. Install the **.NET 8 SDK** (`winget install Microsoft.DotNet.SDK.8`).
+   *For AutoCAD 2021–2024 also install the .NET Framework 4.8 Developer Pack + MSBuild.*
+2. **Double-click `build\Install-mojoCAD.bat`.** It builds the plugin, bundles it with
+   all dependencies, and installs it to
+   `%APPDATA%\Autodesk\ApplicationPlugins\mojoCAD.bundle\`.
+3. **Restart AutoCAD**, then type **`MOJO`** to open the chat palette.
+4. **Add your key.** Click the gear, paste your OpenRouter API key, **Test connection**, **Save**.
+   It is stored DPAPI-encrypted for your Windows user — never in the config file, the drawing, or this repo.
+5. **Chat.** e.g. *"draw a 200mm wall along these points and add a 900mm door 1.2m from the start."*
+   Read the plan, watch the staged changes preview on-canvas in green/amber/red, then **accept** the
+   operations you want. They apply as a single Ctrl+Z step. **Nothing is drawn until you accept.**
 
-4. **Add your key.** Open **Settings** in the palette and paste your OpenRouter API key. It is validated against OpenRouter and stored encrypted with DPAPI — it never lives in the config file or the drawing.
+To remove it later: double-click `build\Uninstall-mojoCAD.bat`.
 
-5. **Chat.** Describe what you want ("draw a 200mm wall along these points and add a 900mm door 1.2m from the start"). Read the plan, watch the staged changes preview on-canvas in green/amber/red, then **accept** the operations you want. They apply as one Ctrl+Z step.
+Prefer to drive the build yourself, or want a per-session `NETLOAD`? See
+[`docs/INSTALL.md`](docs/INSTALL.md) and [`docs/BUILD.md`](docs/BUILD.md).
 
 ---
 
@@ -134,6 +143,7 @@ The primary model plus an ordered list of fallbacks are sent to OpenRouter so th
 
 ## Documentation
 
+- [`docs/INSTALL.md`](docs/INSTALL.md) — the one-step installer, what it does, options, manual install, and troubleshooting.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — project responsibilities, the ports/adapters table, the change-set lifecycle, the threading model, and the provisional-handle mechanism.
 - [`docs/BUILD.md`](docs/BUILD.md) — prerequisites, AutoCAD package versions per release and how to retarget, the `ExcludeAssets=runtime` rule, NETLOAD, and setting up a debug session against `acad.exe`.
 - [`docs/TOOLS.md`](docs/TOOLS.md) — the complete agent tool surface, coordinate/units/handle conventions, the BYLAYER rule, and the uniform error envelope.
