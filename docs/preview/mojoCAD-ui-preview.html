@@ -5,477 +5,401 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>mojoCAD — UI preview</title>
 <style>
-  /* ===== Exact palette pulled from src/MojoCad.Ui/Themes/Dark.xaml ===== */
   :root{
-    --bg:#1B1D22; --surface:#22252B; --surfaceAlt:#2A2E36; --surfaceHover:#31353E;
-    --border:#353A44; --borderStrong:#454B57;
-    --text:#E6E8EC; --muted:#9AA0AB; --faint:#6B7079;
-    --accent:#4C8DFF; --accentHover:#5F9BFF; --accentMuted:#2C4A7A;
+    /* product palette (Themes/Dark.xaml), refined for a calmer, Cursor-like feel */
+    --bg:#161719; --surface:#1C1E22; --surfaceAlt:#222429; --surfaceHover:#2A2D33;
+    --border:#2C2F36; --borderStrong:#3A3E47;
+    --text:#E7E9ED; --muted:#9AA0AB; --faint:#6B7079; --fainter:#4d525b;
+    --accent:#4C8DFF; --accentHover:#5F9BFF; --accentSoft:#1f2b40;
     --add:#3FB950; --mod:#D9A23B; --erase:#E5484D; --org:#8B95A5;
-    --ok:#3FB950; --warn:#D9A23B; --danger:#E5484D;
-    --userBubble:#273043;
-    /* AutoCAD dark-theme chrome (approximate) */
-    --acadRibbon:#3A3A3A; --acadRibbonAlt:#444; --acadCanvas:#141618; --acadBar:#2B2B2B; --acadTitle:#202020;
-    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+    --addBg:rgba(63,185,80,.10); --modBg:rgba(217,162,59,.10); --eraseBg:rgba(229,72,77,.10);
+    --acadCanvas:#0f1113; --acadRibbon:#26282b; --acadTitle:#1a1c1e; --acadBar:#202326;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Consolas,monospace;
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:#0d0e10;color:var(--text);padding:28px 18px 60px;}
-  h1{font-size:24px;margin:0 0 4px;font-weight:650;letter-spacing:.2px}
-  .sub{color:var(--muted);font-size:14px;margin:0 0 28px;max-width:820px;line-height:1.5}
-  h2{font-size:15px;color:var(--accent);margin:34px 0 12px;font-weight:600;
-     border-top:1px solid #222;padding-top:22px;letter-spacing:.3px}
-  .cap{color:var(--faint);font-size:12.5px;margin:0 0 14px;max-width:780px;line-height:1.5}
-  .frameWrap{max-width:1040px}
+  body{margin:0;background:#0a0b0c;color:var(--text);padding:30px 20px 70px;-webkit-font-smoothing:antialiased}
+  h1{font-size:25px;margin:0 0 6px;font-weight:680;letter-spacing:-.3px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 26px;max-width:840px;line-height:1.55}
+  h2{font-size:13px;color:var(--muted);margin:36px 0 14px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px}
+  .cap{color:var(--faint);font-size:13px;margin:-8px 0 16px;max-width:820px;line-height:1.55}
+  kbd{font-family:var(--mono);font-size:10.5px;background:var(--surfaceAlt);border:1px solid var(--borderStrong);
+      border-bottom-width:2px;border-radius:5px;padding:1px 5px;color:var(--muted)}
 
-  /* ===== AutoCAD window chrome ===== */
-  .acad{border-radius:8px;overflow:hidden;border:1px solid #000;box-shadow:0 18px 50px rgba(0,0,0,.55);max-width:1040px}
-  .titlebar{background:var(--acadTitle);height:34px;display:flex;align-items:center;padding:0 12px;font-size:12.5px;color:#cfd2d6;gap:10px}
-  .titlebar .dot{width:14px;height:14px;border-radius:3px}
-  .winbtns{margin-left:auto;display:flex;gap:18px;color:#9aa0ab;font-size:13px}
-  .ribbon{background:var(--acadRibbon);border-bottom:1px solid #222}
-  .tabs{display:flex;gap:2px;padding:6px 8px 0;font-size:12px;color:#c7cace}
-  .tabs .t{padding:5px 12px;border-radius:5px 5px 0 0;cursor:default}
+  /* ===== AutoCAD window ===== */
+  .acad{border-radius:11px;overflow:hidden;border:1px solid #000;box-shadow:0 24px 70px rgba(0,0,0,.6);max-width:1120px}
+  .titlebar{background:var(--acadTitle);height:36px;display:flex;align-items:center;padding:0 14px;font-size:12.5px;color:#c4c8cd;gap:10px}
+  .titlebar .logo{width:15px;height:15px;border-radius:4px;background:linear-gradient(135deg,#4C8DFF,#2C4A7A)}
+  .winbtns{margin-left:auto;display:flex;gap:20px;color:#7d828a;font-size:12px}
+  .ribbon{background:var(--acadRibbon);border-bottom:1px solid #141517}
+  .tabs{display:flex;gap:1px;padding:7px 10px 0;font-size:12px;color:#b6bac0}
+  .tabs .t{padding:6px 13px;border-radius:6px 6px 0 0;cursor:default}
   .tabs .t.active{background:var(--acadCanvas);color:#fff}
-  .tabs .t.mojo{color:#7fb0ff;font-weight:600}
-  .panelrow{display:flex;gap:16px;padding:8px 12px;background:var(--acadRibbonAlt);font-size:11px;color:#bfc3c8;align-items:center}
-  .tool{display:flex;flex-direction:column;align-items:center;gap:3px;opacity:.9}
-  .tool .ic{width:26px;height:26px;border-radius:5px;background:#555;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .tabs .t.mojo{color:#86b2ff;font-weight:600;display:flex;align-items:center;gap:6px}
+  .tabs .t.mojo:before{content:"";width:7px;height:7px;border-radius:2px;background:linear-gradient(135deg,#4C8DFF,#2C4A7A)}
+  .panelrow{display:flex;gap:18px;padding:9px 14px;background:#2b2d31;font-size:11px;color:#aeb2b8;align-items:center}
+  .tool{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.92}
+  .tool .ic{width:28px;height:28px;border-radius:7px;background:#3a3d42;display:flex;align-items:center;justify-content:center;font-size:14px;color:#cfd3d8}
   .tool.mojo .ic{background:linear-gradient(135deg,#4C8DFF,#2C4A7A);color:#fff;font-weight:700}
-  .vline{width:1px;height:38px;background:#555}
+  .vline{width:1px;height:40px;background:#3a3d42}
 
-  .workspace{display:flex;background:var(--acadCanvas);height:560px}
-  .canvas{flex:1;position:relative;background:
-     radial-gradient(circle at 30% 20%, #1a1d20 0, var(--acadCanvas) 60%);overflow:hidden}
-  .cmdline{background:var(--acadBar);border-top:1px solid #111;font-family:Consolas,"SF Mono",monospace;
-     font-size:11.5px;color:#b9bdc2;padding:5px 10px;line-height:1.6}
-  .cmdline .muted{color:#777}
-  .statusbar{background:var(--acadTitle);height:24px;display:flex;align-items:center;gap:14px;padding:0 12px;font-size:11px;color:#8a8f96}
+  .workspace{display:flex;background:var(--acadCanvas);height:600px}
+  .canvas{flex:1;position:relative;overflow:hidden;
+    background:radial-gradient(120% 90% at 35% 25%, #15181b 0, var(--acadCanvas) 65%)}
+  .cmdline{background:var(--acadBar);border-top:1px solid #0c0d0e;font-family:var(--mono);font-size:11.5px;color:#aab0b6;padding:6px 12px;line-height:1.7}
+  .cmdline .accent{color:#86b2ff}.cmdline .ok{color:#5fd07a}.cmdline .muted{color:#6b7079}
+  .statusbar{background:var(--acadTitle);height:26px;display:flex;align-items:center;gap:16px;padding:0 14px;font-size:11px;color:#7d828a}
 
-  /* ===== The docked mojoCAD palette ===== */
-  .palette{width:374px;min-width:374px;background:var(--bg);border-left:1px solid #000;display:flex;flex-direction:column}
-  .pal-grip{writing-mode:vertical-lr;background:var(--acadTitle);color:#8a8f96;font-size:11px;
-     display:flex;align-items:center;justify-content:center;width:22px;letter-spacing:1px}
+  /* ===== palette (Cursor-like) ===== */
+  .palette{width:392px;min-width:392px;background:var(--bg);border-left:1px solid #000;display:flex}
+  .pal-grip{writing-mode:vertical-lr;background:var(--acadTitle);color:#7d828a;font-size:10.5px;
+    display:flex;align-items:center;justify-content:center;width:20px;letter-spacing:1.5px}
   .pal-body{flex:1;display:flex;flex-direction:column;min-width:0}
 
-  /* top bar */
-  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:9px 12px;display:flex;align-items:center;gap:8px}
-  .conn{width:8px;height:8px;border-radius:50%;background:var(--ok)}
-  .conn.idle{background:var(--faint)} .conn.err{background:var(--danger)} .conn.work{background:var(--accent)}
-  .brand{font-weight:600;font-size:14px}
-  .model{color:var(--faint);font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 6px}
-  .iconbtn{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;
-     color:var(--muted);cursor:pointer;font-size:15px}
-  .iconbtn:hover{background:var(--surfaceHover);color:var(--text)}
+  .topbar{padding:11px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--add)} .dot.idle{background:var(--faint)}
+  .brand{font-weight:650;font-size:13.5px;letter-spacing:-.2px}
+  .spacer{flex:1}
+  .tbtn{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+  .tbtn:hover{background:var(--surfaceHover);color:var(--text)}
 
-  /* transcript */
-  .transcript{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-  .row-left{align-self:flex-start;max-width:88%}
-  .row-right{align-self:flex-end;max-width:88%}
-  .bubble-user{background:var(--userBubble);border-radius:10px 10px 2px 10px;padding:9px 12px;font-size:13px;line-height:1.45}
-  .bubble-ai{background:var(--surface);border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:9px 12px;font-size:13px;line-height:1.5}
-  .bubble-ai .cursorblink{color:var(--accent)}
-  .chip{display:inline-block;background:var(--surfaceAlt);color:var(--muted);font-size:11px;border-radius:4px;padding:2px 6px;margin-top:6px}
+  .transcript{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+  .u-msg{align-self:flex-end;max-width:90%;background:var(--accentSoft);border:1px solid #29385a;color:#dfe7f5;
+    border-radius:12px 12px 4px 12px;padding:10px 13px;font-size:13px;line-height:1.5}
+  .a-text{font-size:13.5px;line-height:1.6;color:#d9dce1}
+  .a-text .blink{color:var(--accent)}
 
-  .tool-act{background:var(--surfaceAlt);border-radius:6px;padding:5px 9px;font-size:12px;color:var(--muted);
-     display:flex;align-items:center;gap:8px;align-self:flex-start;max-width:92%}
-  .tool-act .g{width:15px;text-align:center}
-  .spin{color:var(--accent)}
+  .toolline{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted);padding:1px 2px}
+  .toolline .gl{width:14px;text-align:center;color:var(--faint)} .toolline .ok{color:var(--add)} .toolline .sp{color:var(--accent)}
+  .toolline code{font-family:var(--mono);font-size:11px;color:#aeb4bd;background:var(--surfaceAlt);padding:1px 5px;border-radius:4px}
 
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;align-self:flex-start;max-width:94%}
-  .card .h{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;margin-bottom:8px}
-  .stepnum{width:20px;height:20px;border-radius:10px;background:var(--accentMuted);display:inline-flex;
-     align-items:center;justify-content:center;font-size:11px;margin-right:8px;flex:none}
-  .step{display:flex;align-items:flex-start;margin:4px 0;font-size:13px;line-height:1.4}
+  .plan{border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:13px 14px}
+  .plan h4{margin:0 0 9px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;display:flex;gap:7px;align-items:center}
+  .pstep{display:flex;gap:10px;font-size:13px;line-height:1.45;margin:5px 0;color:#cfd3da}
+  .pnum{width:18px;height:18px;border-radius:6px;background:var(--accentSoft);color:#9cc0ff;font-size:11px;
+    display:flex;align-items:center;justify-content:center;flex:none;font-family:var(--mono)}
 
-  /* review card */
-  .review{background:var(--surface);border:1px solid var(--border);border-radius:10px;align-self:stretch;overflow:hidden}
-  .rev-head{background:var(--surfaceAlt);padding:12px 14px}
-  .rev-title{font-weight:600;font-size:14px;margin-bottom:8px}
-  .rev-sum{color:var(--muted);font-size:13px;line-height:1.45;margin-bottom:9px}
-  .badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
-  .badge{border-radius:4px;padding:2px 7px;font-size:11px;font-weight:500}
-  .b-add{background:var(--add);color:#0B1F0E} .b-mod{background:var(--mod);color:#231703}
-  .b-del{background:var(--erase);color:#fff} .b-org{background:var(--org);color:#13171D}
-  .layers{font-size:11px;color:var(--faint)}
-  .rows{padding:6px}
-  .oprow{display:flex;gap:8px;padding:8px;border-radius:6px;align-items:flex-start}
-  .oprow:hover{background:var(--surfaceHover)}
-  .cbx{width:18px;height:18px;border-radius:4px;border:1px solid var(--borderStrong);background:var(--surfaceAlt);flex:none;margin-top:1px;position:relative}
+  /* Cursor-style review/diff card */
+  .review{border:1px solid var(--borderStrong);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .rev-top{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
+  .rev-top .ttl{font-weight:650;font-size:13.5px}
+  .rev-top .count{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surfaceAlt);padding:2px 8px;border-radius:20px}
+  .rev-top .blocked{margin-left:auto;font-size:10px;font-weight:700;color:#fff;background:var(--erase);padding:2px 8px;border-radius:5px;letter-spacing:.5px}
+  .rev-sum{padding:10px 14px 4px;color:var(--muted);font-size:12.5px;line-height:1.5}
+  .rev-layers{padding:0 14px 10px;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+
+  .hunk{display:grid;grid-template-columns:22px 1fr auto;align-items:start;gap:0;padding:7px 12px 7px 0;
+    border-top:1px solid var(--border);position:relative}
+  .hunk:hover{background:var(--surfaceHover)}
+  .hunk.add{background:linear-gradient(90deg,var(--addBg),transparent 60%)}
+  .hunk.mod{background:linear-gradient(90deg,var(--modBg),transparent 60%)}
+  .hunk.del{background:linear-gradient(90deg,var(--eraseBg),transparent 60%)}
+  .gutter{font-family:var(--mono);font-weight:700;text-align:center;font-size:13px;padding-top:1px}
+  .gutter.add{color:var(--add)} .gutter.mod{color:var(--mod)} .gutter.del{color:var(--erase)} .gutter.org{color:var(--org)}
+  .hbody{min-width:0}
+  .hbody .d{font-size:13px;color:#d9dce1;line-height:1.4}
+  .hbody .m{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:2px}
+  .hbody .lint{margin-top:6px;font-size:11px;color:var(--erase);background:rgba(229,72,77,.07);border-left:2px solid var(--erase);padding:5px 8px;border-radius:4px}
+  .hbody .lint .h{color:var(--faint);margin-top:2px}
+  .haccept{display:flex;gap:4px;padding-right:10px;padding-top:1px;opacity:.85}
+  .pill{font-size:10.5px;border-radius:6px;padding:3px 8px;border:1px solid var(--borderStrong);color:var(--muted);font-family:var(--mono)}
+  .pill.on{background:var(--accentSoft);border-color:#2f4674;color:#9cc0ff}
+  .cbx{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--borderStrong);position:relative;margin-top:2px}
   .cbx.on{background:var(--accent);border-color:var(--accent)}
-  .cbx.on:after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
-  .cbx.off-disabled{opacity:.4}
-  .stripe{width:3px;border-radius:2px;flex:none;align-self:stretch}
-  .opbody{flex:1;min-width:0}
-  .opbadges{display:flex;gap:6px;align-items:center;margin-bottom:4px}
-  .tag{border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;color:#fff}
-  .opdesc{font-size:13px;line-height:1.4}
-  .oplayer{font-size:10px;color:var(--faint);margin-top:2px}
-  .lint{background:var(--surface);border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px}
-  .zoom{color:var(--muted);font-size:13px;align-self:flex-start;cursor:pointer}
-  .selsum{padding:8px 14px 0;font-size:11px;color:var(--muted)}
-  .actionbar{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-  .btnrow{display:flex;gap:8px}
-  .btn{border-radius:6px;font-size:12px;padding:6px 12px;cursor:pointer;border:1px solid transparent;text-align:center}
-  .btn-accent{background:var(--accent);color:#fff;padding:8px 16px;font-size:13px}
-  .btn-ghost{background:transparent;border-color:var(--borderStrong);color:var(--text)}
-  .applied-banner{padding:12px 14px;background:rgba(63,185,80,.10);color:var(--ok);font-size:13px;display:flex;gap:12px;align-items:center}
-  .link{color:var(--accent);cursor:pointer}
+  .cbx.on:after{content:"";position:absolute;left:4.5px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .cbx.dis{opacity:.35}
+
+  .rev-actions{padding:11px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .ghost{font-size:12px;border-radius:7px;padding:7px 12px;border:1px solid var(--borderStrong);color:var(--text);background:transparent;display:flex;gap:7px;align-items:center}
+  .primary{font-size:12.5px;border-radius:7px;padding:7px 13px;background:var(--accent);color:#fff;font-weight:550;display:flex;gap:7px;align-items:center;margin-left:auto}
+  .primary.dim{opacity:.5}
+  .applied{padding:11px 14px;border-top:1px solid var(--border);background:rgba(63,185,80,.07);display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--add)}
+  .applied .undo{color:var(--accent);font-family:var(--mono);font-size:11px}
 
   /* composer */
-  .composer{background:var(--surface);border-top:1px solid var(--border);padding:10px 12px}
-  .ctxchip{display:inline-flex;align-items:center;gap:5px;border-radius:12px;padding:4px 10px;font-size:12px;
-     background:var(--surfaceAlt);border:1px solid var(--border);color:var(--text);margin-bottom:8px}
-  .ctxchip.on{background:var(--accentMuted);border-color:var(--accent)}
-  .inputrow{display:flex;gap:8px;align-items:flex-end}
-  .input{flex:1;background:var(--surfaceAlt);border:1px solid var(--border);border-radius:6px;padding:9px 10px;
-     color:var(--text);font-size:13px;min-height:38px}
-  .input.empty{color:var(--faint)}
-  .send{width:40px;height:38px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
-  .footer{background:var(--bg);padding:5px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--faint)}
+  .composer{padding:12px 14px;border-top:1px solid var(--border)}
+  .ctx{display:inline-flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted);border:1px solid var(--border);
+    background:var(--surfaceAlt);border-radius:7px;padding:4px 9px;margin-bottom:9px}
+  .ctx.on{background:var(--accentSoft);border-color:#2f4674;color:#9cc0ff}
+  .inputbox{border:1px solid var(--borderStrong);background:var(--surfaceAlt);border-radius:11px;padding:10px 11px}
+  .inputbox .ph{color:var(--faint);font-size:13px;min-height:34px}
+  .inputbar{display:flex;align-items:center;gap:8px;margin-top:9px}
+  .modelchip{font-size:11.5px;color:var(--muted);font-family:var(--mono);display:flex;gap:5px;align-items:center;
+    border:1px solid var(--border);border-radius:7px;padding:4px 9px}
+  .atctx{font-size:11.5px;color:var(--faint);display:flex;gap:5px;align-items:center}
+  .sendbtn{margin-left:auto;width:32px;height:32px;border-radius:9px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .footer{padding:7px 14px;display:flex;justify-content:space-between;font-size:11px;color:var(--fainter);font-family:var(--mono)}
 
   /* settings */
-  .settings{width:374px;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-  .set-head{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
-  .set-head .t{font-size:15px;font-weight:600}
-  .set-body{padding:14px;display:flex;flex-direction:column;gap:12px;max-height:620px;overflow:auto}
-  .seccard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
-  .sectitle{font-size:13px;font-weight:600;margin-bottom:8px}
-  .flabel{font-size:12px;color:var(--muted);margin:8px 0 4px}
-  .field{background:var(--surfaceAlt);border:1px solid var(--border);border-radius:6px;padding:9px 10px;font-size:13px;display:flex;align-items:center;justify-content:space-between}
-  .field .ph{color:var(--faint)}
-  .combo:after{content:"▾";color:var(--muted)}
-  .hintbox{background:var(--accentMuted);border-radius:6px;padding:10px;font-size:12px;margin-bottom:8px;line-height:1.4}
-  .keynote{font-size:11px;color:var(--faint);margin-top:10px;line-height:1.45}
-  .statusdot{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px}
-  .set-foot{background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;display:flex;justify-content:flex-end;gap:8px}
-  .twocol{display:flex;gap:12px}.twocol>div{flex:1}
+  .settings{width:392px;background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .set-head{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .set-head .t{font-size:14.5px;font-weight:650}
+  .set-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+  .sec{border:1px solid var(--border);border-radius:11px;padding:15px;background:var(--surface)}
+  .sec .st{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:11px}
+  .lbl{font-size:12px;color:var(--muted);margin:10px 0 5px}
+  .field{background:var(--surfaceAlt);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;display:flex;align-items:center;justify-content:space-between;color:#dfe2e7}
+  .field .ph{color:var(--faint)} .field .ph2{font-family:var(--mono);letter-spacing:1px}
+  .row{display:flex;gap:8px;margin-top:11px;align-items:center}
+  .keynote{font-size:11px;color:var(--fainter);margin-top:11px;line-height:1.5}
+  .ok-dot{display:flex;align-items:center;gap:8px;margin-top:11px;font-size:12px;color:var(--add)}
+  .ok-dot:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--add)}
+  .toggle{display:flex;gap:10px;align-items:flex-start;margin-top:13px;font-size:13px;color:#d9dce1}
+  .switch{width:34px;height:20px;border-radius:11px;background:var(--accent);position:relative;flex:none;margin-top:1px}
+  .switch:after{content:"";position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+  .switch.off{background:var(--surfaceHover)} .switch.off:after{left:2px;right:auto}
+  .set-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
 
-  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 18px;font-size:12.5px;color:var(--muted)}
-  .legend b{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:middle}
-  .note{background:#15171b;border:1px solid #222;border-radius:8px;padding:12px 14px;color:var(--muted);font-size:12.5px;line-height:1.55;max-width:1040px;margin-top:10px}
-  .twoup{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  /* on-canvas callouts */
+  .callout{position:absolute;display:flex;gap:7px;align-items:center;font-size:11.5px;font-weight:600;
+    background:rgba(15,17,19,.82);backdrop-filter:blur(2px);border:1px solid;border-radius:8px;padding:5px 10px}
+  .callout.add{color:#7be08c;border-color:#2c6b38}
+  .callout .sw{width:9px;height:9px;border-radius:2px}
+  .legend{position:absolute;left:16px;bottom:54px;display:flex;flex-direction:column;gap:7px;font-size:11px;color:#b9bdc3;
+    background:rgba(15,17,19,.7);border:1px solid #23262a;border-radius:9px;padding:9px 11px}
+  .legend .li{display:flex;gap:8px;align-items:center} .legend .sw{width:11px;height:11px;border-radius:3px}
+
+  .twoup{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .note{background:#101113;border:1px solid #1e2023;border-radius:10px;padding:14px 16px;color:var(--muted);font-size:12.5px;line-height:1.6;max-width:1120px;margin-top:14px}
 </style>
 </head>
 <body>
 
-<h1>mojoCAD — what it looks like inside AutoCAD</h1>
-<p class="sub">A faithful mockup rendered from the actual UI code in this repo (the real dark-theme colors, labels and layout).
-This is a static HTML preview so you can see it without a Windows machine — the live plugin is a dockable WPF palette inside AutoCAD.</p>
+<h1>mojoCAD — inside AutoCAD</h1>
+<p class="sub">A refined, Cursor-style design copilot docked in AutoCAD. You describe the change in plain language;
+mojoCAD shows exactly <b>where it will draw</b> highlighted in green on the canvas, and a reviewable diff in the panel.
+Nothing is committed until you accept.</p>
 
-<div class="legend">
-  <span><b style="background:#3FB950"></b>Green = new geometry</span>
-  <span><b style="background:#D9A23B"></b>Amber = modified</span>
-  <span><b style="background:#E5484D"></b>Red = deleted</span>
-  <span><b style="background:#8B95A5"></b>Slate = organisational (layers)</span>
-</div>
-
-<!-- ============================================================= SCREEN 1 -->
-<h2>1 · The chat palette docked in AutoCAD — proposing &amp; previewing a change</h2>
-<p class="cap">You type a request; mojoCAD reads the drawing, plans, stages the geometry, and shows it <i>previewed on-canvas in green</i> plus a review card. Nothing is committed yet.</p>
+<!-- ===================================================== HERO -->
+<h2>The chat panel + on-canvas preview</h2>
+<p class="cap">The area mojoCAD will add is highlighted in green on the drawing; the panel lists each edit as an accept/reject diff — like a code review, for CAD.</p>
 
 <div class="acad">
-  <div class="titlebar"><div class="dot" style="background:linear-gradient(135deg,#4C8DFF,#2C4A7A)"></div>
-    Level-2.dwg &nbsp;—&nbsp; AutoCAD 2025
-    <span class="winbtns"><span>—</span><span>▢</span><span>✕</span></span>
-  </div>
+  <div class="titlebar"><div class="logo"></div> Level-2.dwg — AutoCAD 2025
+    <span class="winbtns"><span>—</span><span>▢</span><span>✕</span></span></div>
   <div class="ribbon">
     <div class="tabs">
       <div class="t">Home</div><div class="t">Insert</div><div class="t">Annotate</div>
-      <div class="t">View</div><div class="t">Manage</div><div class="t">Output</div>
-      <div class="t active mojo">mojoCAD</div>
+      <div class="t">View</div><div class="t">Manage</div><div class="t active mojo">mojoCAD</div>
     </div>
     <div class="panelrow">
       <div class="tool mojo"><div class="ic">M</div><span>Chat</span></div>
-      <div class="tool mojo"><div class="ic" style="background:#333">⚙</div><span>Settings</span></div>
+      <div class="tool mojo"><div class="ic" style="background:#3a3d42;color:#cfd3d8">⚙</div><span>Settings</span></div>
       <div class="vline"></div>
-      <div class="tool"><div class="ic">/</div><span>Line</span></div>
+      <div class="tool"><div class="ic">╱</div><span>Line</span></div>
       <div class="tool"><div class="ic">▭</div><span>Rect</span></div>
       <div class="tool"><div class="ic">◯</div><span>Circle</span></div>
       <div class="tool"><div class="ic">⊿</div><span>Dim</span></div>
+      <div class="tool"><div class="ic">▦</div><span>Hatch</span></div>
     </div>
   </div>
 
   <div class="workspace">
-    <!-- model space with a floor plan + GREEN preview of the proposed wall + door -->
     <div class="canvas">
-      <svg width="100%" height="100%" viewBox="0 0 640 560" preserveAspectRatio="xMidYMid meet">
-        <!-- existing building (light gray) -->
-        <g stroke="#C8CCD2" stroke-width="2" fill="none">
-          <rect x="120" y="150" width="400" height="280"/>
-          <line x1="120" y1="300" x2="330" y2="300"/>     <!-- interior partition -->
-          <line x1="330" y1="300" x2="330" y2="430"/>
+      <svg width="100%" height="100%" viewBox="0 0 660 600" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#3FB950" flood-opacity="0.7"/>
+          </filter>
+          <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+            <path d="M32 0H0V32" fill="none" stroke="#191c1f" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="660" height="600" fill="url(#grid)"/>
+
+        <!-- existing building: muted gray -->
+        <g stroke="#5b626c" stroke-width="2" fill="none">
+          <rect x="150" y="180" width="380" height="270"/>
+          <line x1="150" y1="320" x2="340" y2="320"/>
+          <line x1="340" y1="320" x2="340" y2="450"/>
         </g>
-        <!-- existing door swing (gray) -->
-        <path d="M220 300 A40 40 0 0 1 260 340" stroke="#9AA0AB" stroke-width="1.5" fill="none"/>
-        <!-- ===== PROPOSED (green preview) ===== -->
-        <g stroke="#3FB950" stroke-width="3" fill="none" style="filter:drop-shadow(0 0 4px rgba(63,185,80,.6))">
-          <!-- new 200mm wall along the north edge, drawn as a double line -->
-          <line x1="120" y1="146" x2="520" y2="146"/>
-          <line x1="120" y1="154" x2="380" y2="154"/>
-          <line x1="430" y1="154" x2="520" y2="154"/>
-          <!-- door opening jambs + 900mm swing -->
-          <line x1="380" y1="150" x2="380" y2="118"/>
-          <path d="M380 150 A48 48 0 0 1 428 102" stroke="#3FB950" stroke-width="2"/>
-          <line x1="430" y1="150" x2="430" y2="154"/>
+        <path d="M232 320 A38 38 0 0 1 270 358" stroke="#5b626c" stroke-width="1.5" fill="none"/>
+        <text x="200" y="300" fill="#4d525b" font-size="11" font-family="ui-monospace,Consolas,monospace">OFFICE</text>
+        <text x="420" y="300" fill="#4d525b" font-size="11" font-family="ui-monospace,Consolas,monospace">LAB</text>
+
+        <!-- ==== GREEN "add zone": where mojoCAD will draw ==== -->
+        <rect x="138" y="120" width="404" height="64" rx="6"
+              fill="rgba(63,185,80,0.09)" stroke="#3FB950" stroke-width="1.4" stroke-dasharray="7 5"/>
+        <g filter="url(#glow)">
+          <g stroke="#3FB950" stroke-width="3" fill="none">
+            <!-- new 200mm wall (double line) along north edge -->
+            <line x1="150" y1="158" x2="530" y2="158"/>
+            <line x1="150" y1="166" x2="392" y2="166"/>
+            <line x1="442" y1="166" x2="530" y2="166"/>
+            <!-- door opening jambs + 900 swing -->
+            <line x1="392" y1="162" x2="392" y2="132"/>
+            <path d="M392 162 A48 48 0 0 1 440 114"/>
+            <line x1="442" y1="158" x2="442" y2="166"/>
+          </g>
         </g>
-        <!-- green dimension hint -->
-        <g stroke="#3FB950" stroke-width="1" opacity=".8">
-          <line x1="120" y1="100" x2="380" y2="100"/>
-          <text x="240" y="94" fill="#3FB950" font-size="13" font-family="Consolas,monospace" text-anchor="middle">1200</text>
+        <!-- dimension -->
+        <g stroke="#3FB950" stroke-width="1" opacity=".85">
+          <line x1="150" y1="104" x2="392" y2="104"/>
+          <line x1="150" y1="100" x2="150" y2="108"/><line x1="392" y1="100" x2="392" y2="108"/>
+          <text x="262" y="98" fill="#7be08c" font-size="12" font-family="ui-monospace,Consolas,monospace" text-anchor="middle">1200</text>
         </g>
-        <!-- UCS icon -->
-        <g stroke="#5aa0ff" stroke-width="2" fill="none">
-          <line x1="40" y1="500" x2="40" y2="460"/><line x1="40" y1="500" x2="80" y2="500"/>
-          <text x="86" y="504" fill="#5aa0ff" font-size="12">X</text>
-          <text x="30" y="452" fill="#5aa0ff" font-size="12">Y</text>
+
+        <!-- UCS -->
+        <g stroke="#4C8DFF" stroke-width="2" fill="none">
+          <line x1="44" y1="540" x2="44" y2="500"/><line x1="44" y1="540" x2="84" y2="540"/>
+          <text x="90" y="544" fill="#4C8DFF" font-size="11">X</text><text x="34" y="492" fill="#4C8DFF" font-size="11">Y</text>
         </g>
-        <!-- faint crosshair -->
-        <g stroke="#33373d" stroke-width="1"><line x1="300" y1="0" x2="300" y2="560"/><line x1="0" y1="250" x2="640" y2="250"/></g>
+        <!-- crosshair -->
+        <g stroke="#1f2327" stroke-width="1"><line x1="330" y1="0" x2="330" y2="600"/><line x1="0" y1="280" x2="660" y2="280"/></g>
       </svg>
-      <div style="position:absolute;left:14px;top:12px;font-size:11px;color:#3FB950;background:rgba(0,0,0,.4);padding:3px 8px;border-radius:5px">● live preview — accept to commit</div>
+
+      <div class="callout add" style="left:300px;top:78px"><span class="sw" style="background:#3FB950"></span>＋ Adding: north wall + 900 door</div>
+      <div class="legend">
+        <div class="li"><span class="sw" style="background:#3FB950"></span>New geometry</div>
+        <div class="li"><span class="sw" style="background:#D9A23B"></span>Modified</div>
+        <div class="li"><span class="sw" style="background:#E5484D"></span>Deleted</div>
+        <div class="li"><span class="sw" style="background:#5b626c"></span>Existing</div>
+      </div>
     </div>
 
-    <!-- the docked palette -->
+    <!-- palette -->
     <div class="palette">
       <div class="pal-body">
         <div class="topbar">
-          <span class="conn work"></span><span class="brand">mojoCAD</span>
-          <span class="model">anthropic/claude-opus-4.8</span>
-          <span class="iconbtn">🗋</span><span class="iconbtn">⚙</span>
+          <span class="dot"></span><span class="brand">mojoCAD</span>
+          <span class="spacer"></span>
+          <span class="tbtn">＋</span><span class="tbtn">⚙</span>
         </div>
 
         <div class="transcript">
-          <div class="row-right"><div class="bubble-user">Draw a 200&nbsp;mm wall along the north edge from (0,6000) to (8000,6000), and add a 900&nbsp;mm door 1.2&nbsp;m from the west end.</div>
-            <div style="text-align:right"><span class="chip">⊕ Current selection</span></div></div>
+          <div class="u-msg">Draw a 200&nbsp;mm wall along the north edge from (0,6000) to (8000,6000), and add a 900&nbsp;mm door 1.2&nbsp;m from the west end.</div>
 
-          <div class="card">
-            <div class="h">📋 Plan</div>
-            <div class="step"><span class="stepnum">1</span><span>Read the drawing units &amp; the north edge geometry.</span></div>
-            <div class="step"><span class="stepnum">2</span><span>Create layer A-WALL; draw a 200&nbsp;mm wall along the north edge.</span></div>
-            <div class="step"><span class="stepnum">3</span><span>Place a 900&nbsp;mm door 1.2&nbsp;m from the west end on A-DOOR.</span></div>
+          <div class="toolline"><span class="gl ok">✓</span><span>Read drawing · <code>Millimeters</code> · 6 layers</span></div>
+          <div class="toolline"><span class="gl ok">✓</span><span>Created layer <code>A-WALL</code>, <code>A-DOOR</code></span></div>
+          <div class="toolline"><span class="gl ok">✓</span><span>Staged wall + door</span></div>
+
+          <div class="plan">
+            <h4>◷ Plan</h4>
+            <div class="pstep"><span class="pnum">1</span>Add a 200&nbsp;mm wall along the north edge (8.0&nbsp;m) on A-WALL.</div>
+            <div class="pstep"><span class="pnum">2</span>Cut a 900&nbsp;mm door 1.2&nbsp;m from the west end, swing into the room.</div>
+            <div class="pstep"><span class="pnum">3</span>Dimension the opening offset.</div>
           </div>
 
-          <div class="tool-act"><span class="g">✓</span>Read drawing summary (units: Millimeters, 6 layers)</div>
-          <div class="tool-act"><span class="g">✓</span>Staged wall (width 200) on A-WALL</div>
-          <div class="tool-act"><span class="g">✓</span>Staged door (900) in wall at offset 1200</div>
+          <div class="a-text">Done — staged below. I drew the door swinging into the office; confirm the swing direction before you accept.</div>
 
-          <div class="bubble-ai row-left">I’ve staged a 200&nbsp;mm wall along the north edge and a 900&nbsp;mm door 1.2&nbsp;m from the west end. Review and accept below — please confirm the door swing direction.</div>
-
-          <!-- REVIEW CARD -->
+          <!-- Cursor-style review/diff -->
           <div class="review">
-            <div class="rev-head">
-              <div class="rev-title">Proposed changes</div>
-              <div class="rev-sum">Add a 200&nbsp;mm north wall on A-WALL and a 900&nbsp;mm door on A-DOOR, 1.2&nbsp;m from the west end.</div>
-              <div class="badges">
-                <span class="badge b-add">+3 new</span>
-                <span class="badge b-org">2 org</span>
-              </div>
-              <div class="layers">Layers: A-DOOR, A-WALL</div>
-            </div>
-            <div class="rows">
-              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--org)"></div>
-                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--org)">ORG</span></div>
-                  <div class="opdesc">Create layer A-WALL (color 7)</div><div class="oplayer">A-WALL</div></div><span class="zoom">⤢</span></div>
-              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--org)"></div>
-                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--org)">ORG</span></div>
-                  <div class="opdesc">Create layer A-DOOR (color 30)</div><div class="oplayer">A-DOOR</div></div><span class="zoom">⤢</span></div>
-              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
-                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
-                  <div class="opdesc">Wall, width 200, 8.00&nbsp;m run</div><div class="oplayer">A-WALL</div></div><span class="zoom">⤢</span></div>
-              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
-                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
-                  <div class="opdesc">Door 900 with swing + jambs</div><div class="oplayer">A-DOOR</div></div><span class="zoom">⤢</span></div>
-              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
-                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
-                  <div class="opdesc">Door tag “D-01”</div><div class="oplayer">A-DOOR</div></div><span class="zoom">⤢</span></div>
-            </div>
-            <div class="selsum">5 of 5 selected</div>
-            <div class="actionbar">
-              <div class="btnrow"><div class="btn btn-ghost">Accept all</div><div class="btn btn-ghost">Reject all</div></div>
-              <div class="btnrow"><div class="btn btn-ghost">Reject</div><div class="btn btn-accent">Accept &amp; apply</div></div>
+            <div class="rev-top"><span class="ttl">Review changes</span><span class="count">5 edits</span></div>
+            <div class="rev-sum">Add a 200&nbsp;mm north wall on A-WALL and a 900&nbsp;mm door on A-DOOR, 1.2&nbsp;m from the west end.</div>
+            <div class="rev-layers">layers: A-DOOR, A-WALL</div>
+
+            <div class="hunk org"><div class="gutter org">±</div><div class="hbody"><div class="d">Create layer A-WALL</div><div class="m">color 7 · BYLAYER</div></div><div class="haccept"><div class="cbx on"></div></div></div>
+            <div class="hunk org"><div class="gutter org">±</div><div class="hbody"><div class="d">Create layer A-DOOR</div><div class="m">color 30 · BYLAYER</div></div><div class="haccept"><div class="cbx on"></div></div></div>
+            <div class="hunk add"><div class="gutter add">+</div><div class="hbody"><div class="d">Wall · width 200 · 8.00&nbsp;m run</div><div class="m">A-WALL · polyline, closed</div></div><div class="haccept"><div class="cbx on"></div></div></div>
+            <div class="hunk add"><div class="gutter add">+</div><div class="hbody"><div class="d">Door 900 · swing + jambs</div><div class="m">A-DOOR · arc + 2 lines</div></div><div class="haccept"><div class="cbx on"></div></div></div>
+            <div class="hunk add"><div class="gutter add">+</div><div class="hbody"><div class="d">Linear dimension · 1200</div><div class="m">A-ANNO</div></div><div class="haccept"><div class="cbx on"></div></div></div>
+
+            <div class="rev-actions">
+              <button class="ghost">Reject all <kbd>Esc</kbd></button>
+              <button class="primary">Accept all <kbd>⌘⏎</kbd></button>
             </div>
           </div>
         </div>
 
         <div class="composer">
-          <span class="ctxchip on">⊕ Selection</span>
-          <div class="inputrow"><div class="input empty">Ask mojoCAD to draw or edit…</div><div class="send">↑</div></div>
+          <div class="ctx on">⊕ Current selection</div>
+          <div class="inputbox">
+            <div class="ph">Plan, draw, or edit your drawing…</div>
+            <div class="inputbar">
+              <span class="modelchip">◆ opus-4.8 ▾</span>
+              <span class="atctx">@ Add context</span>
+              <span class="sendbtn">↑</span>
+            </div>
+          </div>
         </div>
-        <div class="footer"><span>Reviewing 5 staged operations</span><span>1,840 in / 612 out · $0.0091</span></div>
+        <div class="footer"><span>5 staged · review to apply</span><span>1,840↑ 612↓ · $0.0091</span></div>
       </div>
       <div class="pal-grip">mojoCAD</div>
     </div>
   </div>
 
   <div class="cmdline">
-    <div>Command: <span style="color:#fff">MOJO</span></div>
-    <div class="muted">mojoCAD: staged 5 operations — review in the palette. Nothing applied until you accept.</div>
+    <div>Command: <span class="accent">MOJO</span></div>
+    <div class="muted">mojoCAD: 5 operations staged — highlighted in green. Review in the panel; nothing applied until you accept.</div>
     <div>Command: </div>
   </div>
-  <div class="statusbar"><span>MODEL</span><span>⊞ GRID</span><span>⊾ SNAP</span><span>⊥ ORTHO</span><span style="margin-left:auto">Millimeters</span></div>
+  <div class="statusbar"><span>MODEL</span><span>GRID</span><span>SNAP</span><span>ORTHO</span><span style="margin-left:auto">Millimeters</span></div>
 </div>
 
-<!-- ============================================================= SCREEN 2 -->
-<h2>2 · The accept / reject review card — close-up (all change types)</h2>
-<p class="cap">Each operation is one reviewable row with a checkbox. Counts are computed by the plugin (never taken from the model). Deletions and anything that fails a life-safety lint default to <i>unticked</i>; a Blocking issue disables the tick entirely.</p>
+<!-- ===================================================== REVIEW CLOSE-UP -->
+<h2>The review — accept or reject, like a diff</h2>
+<p class="cap">Add / modify / delete read like a code review. A life-safety lint can block a row (checkbox disabled, “Accept” greyed). Applying commits the accepted subset as a single undo step.</p>
 
 <div class="twoup">
-  <div class="review" style="max-width:420px">
-    <div class="rev-head">
-      <div class="rev-title">Proposed changes
-        <span class="badge b-del" style="margin-left:8px">REVIEW BLOCKED</span></div>
-      <div class="rev-sum">Re-route the branch line, widen corridor B, and remove the superseded riser.</div>
-      <div class="badges">
-        <span class="badge b-add">+2 new</span>
-        <span class="badge b-mod">~1 modified</span>
-        <span class="badge b-del">−1 erased</span>
-      </div>
-      <div class="layers">Layers: A-WALL, FP-SPKL, M-PIPE</div>
-    </div>
-    <div class="rows">
-      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
-        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
-          <div class="opdesc">Sprinkler branch, single-line, 8 heads</div><div class="oplayer">FP-SPKL</div></div><span class="zoom">⤢</span></div>
+  <div class="review" style="max-width:440px">
+    <div class="rev-top"><span class="ttl">Review changes</span><span class="count">4 edits</span><span class="blocked">BLOCKED</span></div>
+    <div class="rev-sum">Re-route the branch line, widen corridor B, and remove the superseded riser.</div>
+    <div class="rev-layers">layers: A-WALL, FP-SPKL, M-PIPE</div>
 
-      <div class="oprow"><div class="cbx off-disabled"></div><div class="stripe" style="background:var(--add)"></div>
-        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span><span class="tag" style="background:var(--erase)">BLOCKING</span></div>
-          <div class="opdesc">Place sprinklers @ 4.6&nbsp;m grid</div><div class="oplayer">FP-SPKL</div>
-          <div class="lint"><div style="color:var(--erase)">Spacing exceeds NFPA 13 max for this hazard.</div>
-            <div style="color:var(--faint);margin-top:2px">Confirm coverage spacing before applying.</div></div></div><span class="zoom">⤢</span></div>
+    <div class="hunk add"><div class="gutter add">+</div><div class="hbody"><div class="d">Sprinkler branch · single-line · 8 heads</div><div class="m">FP-SPKL</div></div><div class="haccept"><div class="cbx on"></div></div></div>
+    <div class="hunk del"><div class="gutter del">!</div><div class="hbody"><div class="d">Place sprinklers @ 4.6&nbsp;m grid</div><div class="m">FP-SPKL</div>
+        <div class="lint">Spacing exceeds NFPA 13 max for this hazard.<div class="h">Confirm coverage spacing before applying.</div></div></div>
+        <div class="haccept"><div class="cbx dis"></div></div></div>
+    <div class="hunk mod"><div class="gutter mod">~</div><div class="hbody"><div class="d">Move corridor face +600</div><div class="m">A-WALL · 1 entity</div></div><div class="haccept"><div class="cbx on"></div></div></div>
+    <div class="hunk del"><div class="gutter del">−</div><div class="hbody"><div class="d">Erase old riser</div><div class="m">M-PIPE · 1 entity</div></div><div class="haccept"><div class="cbx"></div></div></div>
 
-      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--mod)"></div>
-        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--mod)">MODIFY</span></div>
-          <div class="opdesc">Move 1 entity (corridor face)</div><div class="oplayer">A-WALL</div></div><span class="zoom">⤢</span></div>
-
-      <div class="oprow"><div class="cbx"></div><div class="stripe" style="background:var(--erase)"></div>
-        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--erase)">ERASE</span><span class="tag" style="background:var(--mod)">WARNING</span></div>
-          <div class="opdesc">Erase 1 entity (old riser)</div><div class="oplayer">M-PIPE</div></div><span class="zoom">⤢</span></div>
-    </div>
-    <div class="selsum">2 of 4 selected</div>
-    <div class="actionbar">
-      <div class="btnrow"><div class="btn btn-ghost">Accept all</div><div class="btn btn-ghost">Reject all</div></div>
-      <div class="btnrow"><div class="btn btn-ghost">Reject</div><div class="btn btn-accent" style="opacity:.55">Accept &amp; apply</div></div>
+    <div class="rev-actions">
+      <button class="ghost">Reject all <kbd>Esc</kbd></button>
+      <button class="primary dim">Resolve blocker to apply</button>
     </div>
   </div>
 
-  <div class="review" style="max-width:420px">
-    <div class="rev-head"><div class="rev-title">Proposed changes</div>
-      <div class="rev-sum">Add the north wall and door.</div>
-      <div class="badges"><span class="badge b-add">+3 new</span></div>
-      <div class="layers">Layers: A-DOOR, A-WALL</div></div>
-    <div class="rows">
-      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
-        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
-          <div class="opdesc">Wall, width 200, 8.00&nbsp;m run</div><div class="oplayer">A-WALL</div>
-          <div style="color:var(--ok);font-size:10px;margin-top:3px">✓ applied</div></div></div>
-      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
-        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
-          <div class="opdesc">Door 900 with swing + jambs</div><div class="oplayer">A-DOOR</div>
-          <div style="color:var(--ok);font-size:10px;margin-top:3px">✓ applied</div></div></div>
-    </div>
-    <div class="applied-banner">✓ Applied as one undo step <span class="link">Undo</span></div>
+  <div class="review" style="max-width:440px">
+    <div class="rev-top"><span class="ttl">Review changes</span><span class="count">2 edits</span></div>
+    <div class="rev-sum">Add the north wall and door.</div>
+    <div class="rev-layers">layers: A-DOOR, A-WALL</div>
+    <div class="hunk add"><div class="gutter add">+</div><div class="hbody"><div class="d">Wall · width 200 · 8.00&nbsp;m run</div><div class="m">A-WALL · ✓ applied</div></div></div>
+    <div class="hunk add"><div class="gutter add">+</div><div class="hbody"><div class="d">Door 900 · swing + jambs</div><div class="m">A-DOOR · ✓ applied</div></div></div>
+    <div class="applied">✓ Applied as one undo step<span class="undo">⌘Z to undo</span></div>
   </div>
 </div>
 
-<!-- ============================================================= SCREEN 3 -->
-<h2>3 · Settings — paste your OpenRouter key, pick a model, set standards</h2>
-<p class="cap">Opened from the gear in the palette top-bar. The key is validated against OpenRouter and stored DPAPI-encrypted on your machine — never in the drawing or the repo.</p>
+<!-- ===================================================== SETTINGS -->
+<h2>Settings</h2>
+<p class="cap">Paste your OpenRouter key, pick a model, set your standards. The key is DPAPI-encrypted locally — never in the drawing or the repo.</p>
 
 <div class="settings">
-  <div class="set-head"><span class="t">Settings</span><span class="iconbtn">✕</span></div>
+  <div class="set-head"><span class="t">Settings</span><span class="tbtn">✕</span></div>
   <div class="set-body">
-
-    <div class="seccard">
-      <div class="sectitle">OpenRouter API key</div>
-      <div class="field"><span>••••••••••••••••••••••••sk-or</span><span>👁</span></div>
-      <div class="btnrow" style="margin-top:10px">
-        <div class="btn btn-ghost">Test connection</div>
-        <div class="btn btn-accent">Save key</div>
-        <div class="link" style="align-self:center;font-size:12px">Remove</div>
-      </div>
-      <div class="statusdot"><span class="conn" style="position:static"></span><span style="color:var(--ok)">Connected · $18.40 of $25.00 remaining</span></div>
-      <div class="keynote">Your key is encrypted with Windows DPAPI and stored locally. It never leaves this machine except as the Authorization header sent directly to OpenRouter.</div>
+    <div class="sec">
+      <div class="st">OpenRouter</div>
+      <div class="field"><span class="ph2">•••••••••••••••••••••• sk-or</span><span>👁</span></div>
+      <div class="row"><button class="ghost">Test connection</button><button class="primary" style="margin-left:0">Save</button></div>
+      <div class="ok-dot">Connected · $18.40 of $25.00 remaining</div>
+      <div class="keynote">Encrypted with Windows DPAPI and stored locally. Sent only as the Authorization header to OpenRouter.</div>
     </div>
-
-    <div class="seccard">
-      <div class="sectitle">Model</div>
-      <div class="flabel">Primary model</div>
-      <div class="field combo"><span>Claude Opus 4.8 — strongest tool-use; default for life-safety</span></div>
-      <div class="btnrow" style="margin-top:8px"><div class="btn btn-ghost">Refresh models</div>
-        <span style="align-self:center;font-size:11px;color:var(--faint)">312 tool-capable models loaded</span></div>
-      <div class="flabel">Fallback models (comma-separated)</div>
-      <div class="field"><span>anthropic/claude-sonnet-4.6, openai/gpt-5.5</span></div>
-      <div class="twocol">
-        <div><div class="flabel">Temperature</div><div class="field"><span>0.2</span></div></div>
-        <div><div class="flabel">Max tokens</div><div class="field"><span>4096</span></div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px">
-        <span class="cbx on"></span>Only use providers that don’t log or train on prompts</div>
+    <div class="sec">
+      <div class="st">Model</div>
+      <div class="lbl">Primary</div>
+      <div class="field"><span>Claude Opus 4.8 — strongest tool-use; default for life-safety</span><span>▾</span></div>
+      <div class="lbl">Fallbacks</div>
+      <div class="field"><span class="ph2" style="letter-spacing:0">anthropic/claude-sonnet-4.6, openai/gpt-5.5</span></div>
+      <div class="toggle"><span class="switch"></span><span>Only use providers that don’t log or train on prompts</span></div>
     </div>
-
-    <div class="seccard">
-      <div class="sectitle">Drafting standards</div>
-      <div class="flabel">Discipline preset</div>
-      <div class="field combo"><span>Fire &amp; Life-Safety</span></div>
-      <div class="flabel">Layer standard</div>
-      <div class="field combo"><span>AIA / US National CAD Standard</span></div>
-      <div class="flabel">Code references</div>
+    <div class="sec">
+      <div class="st">Standards</div>
+      <div class="lbl">Discipline</div>
+      <div class="field"><span>Fire &amp; Life-Safety</span><span>▾</span></div>
+      <div class="lbl">Layer standard</div>
+      <div class="field"><span>AIA / US National CAD Standard</span><span>▾</span></div>
+      <div class="lbl">Code references</div>
       <div class="field"><span class="ph">IBC 2021, NFPA 13, NFPA 101</span></div>
-      <div class="flabel">Annotation scale</div>
-      <div class="field"><span class="ph">1:50</span></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px">
-        <span class="cbx on off-disabled"></span>Require plan approval before the agent acts</div>
-      <div style="font-size:11px;color:var(--faint);margin:2px 0 0 26px">Always on for Fire &amp; Life-Safety.</div>
+      <div class="toggle"><span class="switch"></span><span>Require plan approval before the agent acts <span style="color:var(--faint);font-size:11px">· forced for Fire &amp; Life-Safety</span></span></div>
     </div>
-
-  </div>
-  <div class="set-foot"><div class="btn btn-ghost">Cancel</div><div class="btn btn-accent">Save</div></div>
-</div>
-
-<!-- ============================================================= SCREEN 4 -->
-<h2>4 · First run &amp; “while it’s thinking”</h2>
-<div class="twoup">
-  <div class="palette" style="height:360px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-    <div class="pal-body">
-      <div class="topbar"><span class="conn idle"></span><span class="brand">mojoCAD</span>
-        <span class="model">claude-opus-4.8</span><span class="iconbtn">🗋</span><span class="iconbtn">⚙</span></div>
-      <div class="transcript">
-        <div class="card" style="background:var(--surfaceAlt);align-self:stretch">
-          <div style="font-size:15px;font-weight:600;margin-bottom:6px">Welcome to mojoCAD</div>
-          <div style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:10px">Chat in plain English to draft and edit your drawing. mojoCAD stages every change for your review — nothing touches the drawing until you accept it. To begin, add your OpenRouter API key.</div>
-          <div class="btn btn-accent" style="display:inline-block">Open Settings to add your key</div>
-        </div>
-      </div>
-      <div class="footer" style="border-top:1px solid var(--border)"><span>Add your OpenRouter key to begin</span><span></span></div>
+    <div class="sec">
+      <div class="st">Advanced</div>
+      <div class="toggle"><span class="switch off"></span><span>Let the AI use raw AutoCAD commands <span style="color:var(--faint);font-size:11px">· experimental, reviewed before running</span></span></div>
     </div>
   </div>
-
-  <div class="palette" style="height:360px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-    <div class="pal-body">
-      <div class="topbar"><span class="conn work"></span><span class="brand">mojoCAD</span>
-        <span class="model">claude-opus-4.8</span><span class="iconbtn">🗋</span><span class="iconbtn">⚙</span></div>
-      <div class="transcript">
-        <div class="row-right"><div class="bubble-user">Add room tags with areas to every space on this level.</div></div>
-        <div class="tool-act"><span class="g spin">◐</span>Reading the drawing…</div>
-        <div class="tool-act"><span class="g">✓</span>Queried entities (14 closed rooms found)</div>
-        <div class="tool-act"><span class="g spin">◐</span>Measuring areas…</div>
-        <div class="bubble-ai row-left">Tagging 14 rooms — computing each area with the CAD engine so the numbers are exact<span class="cursorblink">▍</span></div>
-      </div>
-      <div class="composer">
-        <div class="inputrow"><div class="input empty">Ask mojoCAD to draw or edit…</div>
-          <div class="send" style="background:transparent;border:1px solid var(--borderStrong);color:var(--text)">■</div></div>
-      </div>
-      <div class="footer"><span>Measuring…</span><span>working</span></div>
-    </div>
-  </div>
+  <div class="set-foot"><button class="ghost">Cancel</button><button class="primary" style="margin-left:0">Save</button></div>
 </div>
 
-<div class="note">
-  <b>How it behaves (the important part):</b> mojoCAD never edits your drawing directly. The AI can only <i>stage</i> a change set,
-  which you preview on-canvas (green = new, amber = modified, red = deleted) and accept per-row or wholesale. Accepting applies the
-  selected operations as a <b>single Ctrl+Z step</b>; rejecting leaves the drawing untouched. For Fire &amp; Life-Safety work it must
-  present a plan and may ask clarifying questions before acting — it won’t guess code parameters. You remain the engineer of record.
-</div>
+<div class="note"><b>How it behaves:</b> the AI never edits your drawing directly. It stages a change set, highlights exactly where it will draw in <span style="color:#3FB950">green</span> (amber = modify, red = delete), and you accept or reject — per row or all at once. Accepting commits as one <kbd>⌘Z</kbd> step; rejecting leaves the drawing untouched. For life-safety work it plans first and won’t guess code parameters. You remain the engineer of record.</div>
 
 </body>
 </html>
