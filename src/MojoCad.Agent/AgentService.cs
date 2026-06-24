@@ -215,9 +215,9 @@ namespace MojoCad.Agent
             return new ChatRequest
             {
                 Model = context.Models.Model,
-                Models = fallbacks != null && fallbacks.Count > 0
-                    ? new List<string>(new[] { context.Models.Model }.Concat(fallbacks))
-                    : null,
+                // OpenRouter fallback semantics: `model` is primary, `models` is the ordered fallback
+                // list (excluding the primary). If the primary errors/refuses, the router tries these.
+                Models = fallbacks != null && fallbacks.Count > 0 ? fallbacks : null,
                 Messages = messages,
                 Tools = _tools,
                 ToolChoice = "auto",
