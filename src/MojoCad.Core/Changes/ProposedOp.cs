@@ -55,6 +55,13 @@ namespace MojoCad.Core.Changes
         /// <summary>If apply failed, the reason (surfaced on the row). Null otherwise.</summary>
         public string? FailureReason { get; set; }
 
+        /// <summary>
+        /// Free-form metadata attached by higher-level (domain) tools - e.g. a wall op records its
+        /// centerline and width so a later <c>place_opening</c> can position jambs in it. Not applied
+        /// to the drawing; purely intra-turn bookkeeping (and useful provenance on the audit record).
+        /// </summary>
+        public Dictionary<string, string> Meta { get; } = new Dictionary<string, string>();
+
         public bool IsAccepted => State == ChangeState.Accepted;
     }
 

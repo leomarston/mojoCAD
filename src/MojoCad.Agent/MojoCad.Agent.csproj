@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MojoCad.Agent - the OpenRouter client and the agentic loop. Pure managed code
+    with NO AutoCAD or WPF dependency: it reaches the drawing only through the
+    Core IAcadBridge port and produces reviewable ChangeSets. Unit-testable off
+    AutoCAD (SSE parsing, tool-call assembly, error mapping, prompt building).
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <RootNamespace>MojoCad.Agent</RootNamespace>
+    <AssemblyName>MojoCad.Agent</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MojoCad.Core\MojoCad.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <!-- Use the in-box System.Net.Http on .NET Framework (avoids the 4.3.x package's binding-redirect pain). -->
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>
