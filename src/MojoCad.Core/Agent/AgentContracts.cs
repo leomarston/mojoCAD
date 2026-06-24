@@ -39,6 +39,9 @@ namespace MojoCad.Core.Agent
 
         /// <summary>Enforce the plan-before-act approval gate for this turn.</summary>
         public bool RequirePlanApproval { get; set; }
+
+        /// <summary>Offer the experimental <c>run_command</c> power tool this turn (user opt-in).</summary>
+        public bool EnableCommandExecution { get; set; }
     }
 
     /// <summary>

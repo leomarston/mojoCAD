@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using MojoCad.Acad.Interop;
 using MojoCad.Core.Changes;
@@ -34,37 +35,31 @@ namespace MojoCad.Acad
             {
                 var result = new ApplyResult { UndoLabel = undoLabel };
                 var doc = dm.MdiActiveDocument;
+
+                // Raw-command ops can't run inside our transaction, so they take a different path.
+                var commandOps = accepted.OfType<RunCommandOp>().ToList();
+                var dbOps = accepted.Where(o => !(o is RunCommandOp)).ToList();
+
                 try
                 {
                     using (doc.LockDocument())
-                    using (var tr = doc.Database.TransactionManager.StartTransaction())
                     {
-                        var db = doc.Database;
-                        var ms = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForWrite);
-                        var opResults = new Dictionary<string, List<ObjectId>>(StringComparer.OrdinalIgnoreCase);
-
-                        foreach (var op in accepted)
+                        if (commandOps.Count == 0)
                         {
-                            var created = ApplyOne(op, db, tr, ms, opResults);
-
-                            // Record results under the op id and its provisional handle so later ops resolve refs.
-                            op.ResultHandles.Clear();
-                            foreach (var id in created) op.ResultHandles.Add(HandleUtil.ToHandle(id));
-                            opResults[op.OpId] = created;
-                            opResults["@" + op.OpId] = created;
-
-                            op.State = ChangeState.Applied;
-                            result.AppliedOpIds.Add(op.OpId);
+                            // Common case: everything is one transaction => one Ctrl+Z step.
+                            CommitDbOps(doc, dbOps, result);
                         }
-
-                        tr.Commit();
+                        else
+                        {
+                            // Mixed/command case: bracket in an UNDO group so it still undoes as one step.
+                            ApplyMixed(doc, dbOps, commandOps, result);
+                        }
                         result.Success = true;
                     }
                 }
                 catch (Exception ex)
                 {
-                    // The single transaction was disposed without Commit => full rollback. Nothing was
-                    // committed, so every accepted op is marked Failed and the applied list is cleared.
+                    // Full rollback. Nothing stays committed, so every accepted op is marked Failed.
                     result.Success = false;
                     result.Error = ex.Message;
                     result.AppliedOpIds.Clear();
@@ -91,6 +86,80 @@ namespace MojoCad.Acad
                 var doc = AcApp.DocumentManager?.MdiActiveDocument;
                 doc?.SendStringToExecute("_.U ", true, false, false);
             });
+        }
+
+        // ----- apply strategies ------------------------------------------------------------------
+
+        /// <summary>Apply all (non-command) ops in a single transaction - the whole commit is one undo step.</summary>
+        private static void CommitDbOps(Document doc, List<ProposedOp> dbOps, ApplyResult result)
+        {
+            using var tr = doc.Database.TransactionManager.StartTransaction();
+            var db = doc.Database;
+            var ms = (BlockTableRecord)tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForWrite);
+            var opResults = new Dictionary<string, List<ObjectId>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var op in dbOps)
+            {
+                var created = ApplyOne(op, db, tr, ms, opResults);
+                op.ResultHandles.Clear();
+                foreach (var id in created) op.ResultHandles.Add(HandleUtil.ToHandle(id));
+                opResults[op.OpId] = created;
+                opResults["@" + op.OpId] = created;
+                op.State = ChangeState.Applied;
+                result.AppliedOpIds.Add(op.OpId);
+            }
+            tr.Commit();
+        }
+
+        /// <summary>
+        /// EXPERIMENTAL command path: structured ops commit first (their own transaction), then each raw
+        /// AutoCAD command runs via the Editor, all wrapped in a single UNDO group so the accept is still
+        /// one Ctrl+Z step. On any failure the group is undone and the exception propagates to the caller's
+        /// rollback handler. Requires real-AutoCAD validation before relying on it for production work.
+        /// </summary>
+        private static void ApplyMixed(Document doc, List<ProposedOp> dbOps, List<RunCommandOp> commandOps, ApplyResult result)
+        {
+            var ed = doc.Editor;
+            ed.Command("._UNDO", "_Begin");
+            bool ok = false;
+            try
+            {
+                if (dbOps.Count > 0) CommitDbOps(doc, dbOps, result);
+
+                foreach (var cmd in commandOps)
+                {
+                    RunOneCommand(doc, ed, cmd);
+                    cmd.State = ChangeState.Applied;
+                    result.AppliedOpIds.Add(cmd.OpId);
+                }
+                ok = true;
+            }
+            finally
+            {
+                ed.Command("._UNDO", "_End");
+                if (!ok)
+                {
+                    // Roll the whole group back so a partial command run leaves nothing behind.
+                    try { ed.Command("._U"); } catch { /* best effort */ }
+                }
+            }
+        }
+
+        private static void RunOneCommand(Document doc, Editor ed, RunCommandOp cmd)
+        {
+            // Pre-select the target entities so the command can consume them (PICKFIRST) or via "P"/"L".
+            if (cmd.TargetHandles.Count > 0)
+            {
+                var ids = cmd.TargetHandles
+                    .Select(h => HandleUtil.Resolve(doc.Database, h))
+                    .Where(id => !id.IsNull)
+                    .ToArray();
+                if (ids.Length > 0) ed.SetImpliedSelection(ids);
+            }
+
+            var tokens = new List<object>(cmd.Inputs.Count + 1) { cmd.CommandName };
+            foreach (var input in cmd.Inputs) tokens.Add(input);
+            ed.Command(tokens.ToArray());
         }
 
         // ----- per-op apply ----------------------------------------------------------------------

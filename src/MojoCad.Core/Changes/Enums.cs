@@ -22,7 +22,10 @@ namespace MojoCad.Core.Changes
         Offset,
         Array,
         Erase,
-        PropertyChange
+        PropertyChange,
+
+        /// <summary>Run a raw AutoCAD command sequence (the "power tool" that reaches the full command set).</summary>
+        RunCommand
     }
 
     /// <summary>

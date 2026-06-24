@@ -104,6 +104,14 @@ namespace MojoCad.Core.Settings
         /// <summary>If true, the plan-before-act gate is enforced for every turn (always on for Fire &amp; Life-Safety).</summary>
         public bool RequirePlanApproval { get; set; }
 
+        /// <summary>
+        /// Enable the experimental <c>run_command</c> tool, which lets the agent reach AutoCAD's full command
+        /// set (FILLET, TRIM, XREF, ...) as staged, reviewed operations. OFF by default: command output cannot
+        /// be shape-previewed and the feature should be validated against your AutoCAD version before relying
+        /// on it. Even when on, every command is reviewed and applied as one undo step - never auto-run.
+        /// </summary>
+        public bool EnableCommandExecution { get; set; }
+
         public static MojoSettings CreateDefault() => new MojoSettings();
     }
 }

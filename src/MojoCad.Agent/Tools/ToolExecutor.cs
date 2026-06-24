@@ -93,6 +93,9 @@ namespace MojoCad.Agent.Tools
                     case ToolNames.PlaceSprinklers: return await _domain.PlaceSprinklersAsync(args);
                     case ToolNames.AddRoomTag: return await _domain.AddRoomTagAsync(args);
 
+                    // ---- power tool ----
+                    case ToolNames.RunCommand: return await RunCommand(args);
+
                     // ---- control ----
                     case ToolNames.PresentPlan: return PresentPlan(args);
                     case ToolNames.AskClarification: return AskClarification(args);
@@ -410,6 +413,42 @@ namespace MojoCad.Agent.Tools
             // Deletions default to a Warning so they stand out and aren't swept up by "accept all".
             if (op.Severity == Severity.Info) op.Severity = Severity.Warning;
             return Stage(args, op, $"erase {ids.Count} entit{(ids.Count == 1 ? "y" : "ies")}");
+        }
+
+        // ===== POWER TOOL =========================================================================
+
+        private async Task<ToolOutcome> RunCommand(ToolArgs args)
+        {
+            string command = args.GetString("command").Trim();
+            if (string.IsNullOrEmpty(command))
+                throw new ToolArgException("MISSING_ARG", "A command name is required.", "command", "Provide an AutoCAD command, e.g. FILLET.");
+
+            var inputs = args.GetStringListOrNull("inputs") ?? new List<string>();
+            var targets = args.GetStringListOrNull("targets");
+
+            var op = new RunCommandOp { CommandName = command, Inputs = inputs };
+            if (targets != null && targets.Count > 0)
+            {
+                await ToolCommon.ResolveHandlesAsync(targets, _builder, _bridge).ConfigureAwait(false);
+                op.TargetHandles.AddRange(targets);
+            }
+
+            // Default to a Warning so a raw command stands out on the review card.
+            ToolCommon.ApplyCommon(op, args);
+            if (op.Severity == Severity.Info) op.Severity = Severity.Warning;
+            if (string.IsNullOrWhiteSpace(op.PlainLanguage))
+            {
+                string tail = inputs.Count > 0 ? " " + string.Join(" ", inputs) : "";
+                string tgt = op.TargetHandles.Count > 0 ? $" on {op.TargetHandles.Count} entit{(op.TargetHandles.Count == 1 ? "y" : "ies")}" : "";
+                op.PlainLanguage = $"Run AutoCAD command: {command}{tail}{tgt}";
+            }
+
+            var staged = _builder.Add(op);
+            return new ToolOutcome
+            {
+                Display = $"Staged command {command}",
+                ResultJson = ToolResult.Staged(staged.OpId, staged.ProvisionalHandle, $"Staged AutoCAD command '{command}' for review.")
+            };
         }
 
         // ===== CONTROL ============================================================================

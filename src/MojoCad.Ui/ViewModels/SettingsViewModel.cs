@@ -51,6 +51,7 @@ namespace MojoCad.Ui.ViewModels
             _annotationScale = _settings.Standards.AnnotationScale ?? string.Empty;
             _additionalGuidance = _settings.Standards.AdditionalGuidance;
             _requirePlanApproval = _settings.RequirePlanApproval;
+            _enableCommandExecution = _settings.EnableCommandExecution;
 
             HasKey = _services.SecureStore.HasApiKey;
             KeyStatus = HasKey ? "A key is stored. Test it or paste a new one." : "No key stored yet.";
@@ -278,6 +279,10 @@ namespace MojoCad.Ui.ViewModels
         [ObservableProperty]
         private bool _requirePlanApproval;
 
+        /// <summary>Opt-in: let the agent reach AutoCAD's full command set via the experimental run_command tool.</summary>
+        [ObservableProperty]
+        private bool _enableCommandExecution;
+
         public bool IsCustomLayerStandard => LayerStandard == LayerStandard.Custom;
         partial void OnLayerStandardChanged(LayerStandard value) => OnPropertyChanged(nameof(IsCustomLayerStandard));
 
@@ -320,6 +325,7 @@ namespace MojoCad.Ui.ViewModels
             _settings.Standards.AdditionalGuidance = AdditionalGuidance?.Trim() ?? string.Empty;
 
             _settings.RequirePlanApproval = RequirePlanApproval || IsPlanApprovalForced;
+            _settings.EnableCommandExecution = EnableCommandExecution;
             _settings.OnboardingCompleted = _services.SecureStore.HasApiKey;
 
             _services.Settings.Save(_settings);

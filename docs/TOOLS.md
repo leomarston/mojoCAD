@@ -128,3 +128,48 @@ Every tool failure (and any argument error) is returned to the model as one JSON
 - **CAD-computed measurements** (and the `create_dimension` rule of passing geometry, not values) stop the model from fabricating numbers.
 - **BYLAYER + a layer standard** keeps output consistent with office/project CAD standards and reviewable at a glance.
 - **The uniform envelope** turns failures into productive retries instead of dead ends, and surfaces the failure reason to the engineer on the activity row.
+
+## Reaching the full AutoCAD feature set: `run_command` (opt-in)
+
+The structured tools above are the safe, previewable default, but they don't cover
+*every* AutoCAD feature. For the long tail (FILLET, CHAMFER, TRIM, EXTEND, JOIN,
+BREAK, EXPLODE, ALIGN, DIVIDE/MEASURE, WIPEOUT, REVCLOUD, dynamic-block edits,
+XREF, layouts/PLOT, …) there is one **power tool**, disabled by default:
+
+**`run_command`** `{ command, inputs?[], targets?[handles], note, severity }` — runs a
+raw AutoCAD command. The model maps the user's intent onto an actual command +
+the ordered prompt responses (`inputs`), and the entities to act on (`targets`,
+pre-selected so the command can consume them).
+
+It is governed by the **same safety model** as everything else:
+
+- **Opt-in.** Enabled only when the engineer ticks *Settings → Advanced → "Let the AI
+  use raw AutoCAD commands"* (`MojoSettings.EnableCommandExecution`). When off, the
+  tool isn't even offered to the model and the system prompt tells it commands are
+  unavailable.
+- **Staged & reviewed.** `run_command` does not execute — it stages a `RunCommandOp`.
+  The review card shows the command text and the affected entities; **nothing runs
+  until you accept.** Raw commands default to **Warning** severity so they stand out.
+- **Atomic.** On accept, structured ops commit in their transaction and the commands
+  run inside an `UNDO Begin/End` group, so the whole acceptance is still **one Ctrl+Z**.
+  Any failure rolls the group back.
+- **No shape preview.** A command's exact output can't be known before it runs, so
+  there is no green/amber/red preview for command ops — you review the command itself.
+  The model is instructed to write a clear `note` describing precisely what it does and
+  to prefer the `-` dialog-suppressing command variants.
+
+**Status: experimental.** Driving AutoCAD commands from .NET interacts with command
+context, document locks and selection state in ways that must be validated against your
+specific AutoCAD version. Treat it as a power-user feature and verify before relying on
+it for production — especially anything life-safety. The structured tools remain the
+recommended path for everyday work.
+
+### How the model knows what AutoCAD can do
+
+Whether or not command execution is enabled, the system prompt injects an **AutoCAD
+feature-fluency** section that maps AutoCAD's command families (draw / modify / annotate /
+blocks & layers / discipline semantics) onto the available tools, and tells the model to
+**compose** unsupported operations from primitives (e.g. a fillet = an arc joining two
+trimmed segments) rather than guess. Combined with the base model's own AutoCAD training,
+this is what lets it translate "fillet these two walls at 25mm" or "array that block 5×3"
+into the right tool calls.

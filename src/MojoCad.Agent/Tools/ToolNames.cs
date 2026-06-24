@@ -43,6 +43,9 @@ namespace MojoCad.Agent.Tools
         public const string PlaceSprinklers = "place_sprinklers";
         public const string AddRoomTag = "add_room_tag";
 
+        // Power tool - full AutoCAD command surface (opt-in; off by default)
+        public const string RunCommand = "run_command";
+
         // Control (no geometry)
         public const string PresentPlan = "present_plan";
         public const string AskClarification = "ask_clarification";

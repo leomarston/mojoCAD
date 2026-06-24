@@ -15,7 +15,8 @@ namespace MojoCad.Agent
     /// </summary>
     public static class SystemPromptBuilder
     {
-        public static string Build(StandardsProfile standards, DrawingSummary drawing, IReadOnlyList<string> attachedHandles, bool requirePlanApproval)
+        public static string Build(StandardsProfile standards, DrawingSummary drawing, IReadOnlyList<string> attachedHandles,
+            bool requirePlanApproval, bool commandEnabled = false)
         {
             var sb = new StringBuilder();
 
@@ -60,6 +61,45 @@ namespace MojoCad.Agent
             sb.AppendLine("  unless explicitly asked; deletions are surfaced in red and are not auto-accepted.");
             sb.AppendLine("- When unsure, ask. A correct clarifying question is always better than a confident wrong edit.");
             sb.AppendLine();
+
+            sb.AppendLine("## AutoCAD feature fluency");
+            sb.AppendLine("You are an expert AutoCAD user and know its command set and conventions. Map the engineer's");
+            sb.AppendLine("intent onto your tools - most AutoCAD operations are covered by the structured tools:");
+            sb.AppendLine("- Draw: LINE/PLINE/RECTANG/POLYGON -> create_polyline / create_rectangle; CIRCLE/ARC/ELLIPSE ->");
+            sb.AppendLine("  create_circle / create_arc / create_ellipse.");
+            sb.AppendLine("- Modify: MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET/ARRAY/ERASE -> the matching *_entities tools.");
+            sb.AppendLine("- Annotate: TEXT/MTEXT -> create_text; DIMLINEAR/ALIGNED/RADIUS/DIAMETER/ANGULAR -> create_dimension;");
+            sb.AppendLine("  HATCH/GRADIENT -> create_hatch.");
+            sb.AppendLine("- Blocks & layers: INSERT -> insert_block; LAYER -> create_layer / set_current_layer.");
+            sb.AppendLine("- Building/MEP/FP semantics: draw_wall, place_opening, route_mep, place_sprinklers, add_room_tag.");
+            sb.AppendLine("When no single tool matches (e.g. FILLET, CHAMFER, TRIM, EXTEND, JOIN, BREAK, EXPLODE, ALIGN,");
+            sb.AppendLine("DIVIDE/MEASURE, WIPEOUT, REVCLOUD, dynamic-block edits, XREF, layouts/PLOT), COMPOSE the result from");
+            sb.AppendLine("the primitives above whenever you reasonably can (e.g. a fillet is an arc joining two trimmed");
+            if (commandEnabled)
+                sb.AppendLine("segments), or use the run_command power tool described below.");
+            else
+            {
+                sb.AppendLine("segments). Raw AutoCAD command execution is currently DISABLED, so do not assume you can run");
+                sb.AppendLine("commands; if a request truly needs a command with no tool/primitive path, say so and propose an");
+                sb.AppendLine("alternative or ask the engineer to enable command execution in Settings.");
+            }
+            sb.AppendLine();
+
+            if (commandEnabled)
+            {
+                sb.AppendLine("## Power tool: run_command (use sparingly)");
+                sb.AppendLine("You may call `run_command` to run a raw AutoCAD command for features without a dedicated tool.");
+                sb.AppendLine("Rules: prefer a structured tool or a primitive composition first; only reach for run_command for");
+                sb.AppendLine("the genuine long tail. Use the '-' dialog-suppressing variant of any command that opens a dialog");
+                sb.AppendLine("(e.g. -ARRAY, -HATCH, -INSERT, -PLOT). Provide the full ordered `inputs` that answer every prompt");
+                sb.AppendLine("(option keywords, numbers, points as \"x,y\", \"\" for Enter); pass entities to act on in `targets`");
+                sb.AppendLine("and reference them with \"P\" (previous) in the inputs. The command is STAGED and shown to the");
+                sb.AppendLine("engineer for accept/reject - it does NOT run until they accept, then it joins the same single undo");
+                sb.AppendLine("step. There is no shape-preview for commands, so write a clear `note` explaining exactly what it does.");
+                sb.AppendLine("Never use commands that prompt with a modal dialog you cannot script, or that affect files/plotting");
+                sb.AppendLine("without the engineer explicitly asking.");
+                sb.AppendLine();
+            }
 
             sb.AppendLine("## Tool & coordinate contract");
             sb.AppendLine("- Coordinates are in raw DRAWING UNITS: [x, y] or [x, y, z] (z defaults to 0).");

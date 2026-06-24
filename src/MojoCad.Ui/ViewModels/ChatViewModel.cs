@@ -210,7 +210,8 @@ namespace MojoCad.Ui.ViewModels
                 Models = _settings.Models,
                 Standards = _settings.Standards,
                 RequirePlanApproval = _settings.RequirePlanApproval
-                                      || _settings.Standards.Discipline == DisciplinePreset.FireAndLifeSafety
+                                      || _settings.Standards.Discipline == DisciplinePreset.FireAndLifeSafety,
+                EnableCommandExecution = _settings.EnableCommandExecution
             };
 
             if (UseSelectionContext)

@@ -51,6 +51,23 @@ namespace MojoCad.Agent.Tests
         }
 
         [Fact]
+        public async Task RunCommand_StagesRunCommandOp_WithCommandAndInputs()
+        {
+            var outcome = await Run(ToolNames.RunCommand,
+                @"{ ""command"": ""FILLET"", ""inputs"": [""R"", ""25"", """"], ""note"": ""Fillet the two walls"" }");
+
+            Assert.False(outcome.Failed);
+            Assert.True(Json(outcome.ResultJson).GetProperty("staged").GetBoolean());
+
+            var op = Assert.IsType<RunCommandOp>(_builder.Current.Ops.Single());
+            Assert.Equal("FILLET", op.CommandName);
+            Assert.Equal(new[] { "R", "25", "" }, op.Inputs.ToArray());
+            Assert.Equal("Fillet the two walls", op.PlainLanguage);
+            // A raw command defaults to Warning severity so it stands out on the review card.
+            Assert.Equal(Severity.Warning, op.Severity);
+        }
+
+        [Fact]
         public async Task CreateCircle_NonPositiveRadius_ReturnsErrorEnvelope_StagesNothing()
         {
             var outcome = await Run(ToolNames.CreateCircle, @"{ ""center"": [0,0], ""radius"": 0 }");

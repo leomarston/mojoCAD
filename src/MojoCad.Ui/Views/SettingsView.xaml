@@ -214,6 +214,23 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ============ Advanced / power tools ============ -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Advanced — full AutoCAD command access" Style="{StaticResource SectionTitle}" />
+                        <CheckBox Style="{DynamicResource MojoCheckBox}"
+                                  IsChecked="{Binding EnableCommandExecution, Mode=TwoWay}"
+                                  Content="Let the AI use raw AutoCAD commands (run_command)" />
+                        <TextBlock Margin="26,4,0,0" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource Brush.TextFaint}">
+                            Unlocks AutoCAD's full command set (FILLET, TRIM, XREF, …) for features without a
+                            dedicated tool. Commands are still staged and reviewed before they run, and applied as one
+                            undo step — but they have no on-canvas shape preview. Experimental: verify behaviour with
+                            your AutoCAD version before relying on it.
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
             </StackPanel>
         </ScrollViewer>
 

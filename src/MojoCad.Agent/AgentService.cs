@@ -28,7 +28,10 @@ namespace MojoCad.Agent
         private readonly IOpenRouterClient _client;
         private readonly IAcadBridge _bridge;
         private readonly ISecureStore _secureStore;
-        private readonly List<ToolDef> _tools;
+
+        // Two cached tool surfaces: with and without the opt-in run_command power tool.
+        private readonly List<ToolDef> _toolsBase;
+        private readonly List<ToolDef> _toolsWithCommand;
 
         // Conversation history (user/assistant/tool messages). The system prompt is rebuilt fresh each turn.
         private readonly List<ChatMessage> _history = new List<ChatMessage>();
@@ -38,7 +41,8 @@ namespace MojoCad.Agent
             _client = client;
             _bridge = bridge;
             _secureStore = secureStore;
-            _tools = ToolRegistry.BuildAll();
+            _toolsBase = ToolRegistry.BuildAll(includeCommandTool: false);
+            _toolsWithCommand = ToolRegistry.BuildAll(includeCommandTool: true);
         }
 
         public void ResetConversation() => _history.Clear();
@@ -85,7 +89,8 @@ namespace MojoCad.Agent
                     : new Core.Drawing.DrawingSummary();
 
                 string systemPrompt = SystemPromptBuilder.Build(context.Standards, drawing, context.AttachedHandles,
-                    context.RequirePlanApproval || context.Standards.Discipline == DisciplinePreset.FireAndLifeSafety);
+                    context.RequirePlanApproval || context.Standards.Discipline == DisciplinePreset.FireAndLifeSafety,
+                    context.EnableCommandExecution);
 
                 for (int iteration = 0; iteration < MaxToolIterations; iteration++)
                 {
@@ -219,7 +224,7 @@ namespace MojoCad.Agent
                 // list (excluding the primary). If the primary errors/refuses, the router tries these.
                 Models = fallbacks != null && fallbacks.Count > 0 ? fallbacks : null,
                 Messages = messages,
-                Tools = _tools,
+                Tools = context.EnableCommandExecution ? _toolsWithCommand : _toolsBase,
                 ToolChoice = "auto",
                 ParallelToolCalls = false,
                 Temperature = context.Models.Temperature,

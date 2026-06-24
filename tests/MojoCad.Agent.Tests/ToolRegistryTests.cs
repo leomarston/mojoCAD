@@ -24,7 +24,8 @@ namespace MojoCad.Agent.Tests
         [Fact]
         public void BuildAll_ContainsEveryToolName_ExactlyOnce()
         {
-            var built = ToolRegistry.BuildAll().Select(t => t.Function.Name).ToList();
+            // Include the opt-in run_command power tool so the FULL surface is checked against ToolNames.
+            var built = ToolRegistry.BuildAll(includeCommandTool: true).Select(t => t.Function.Name).ToList();
             var expected = AllToolNameConstants().ToHashSet();
 
             // Every declared tool name is offered...
@@ -39,7 +40,7 @@ namespace MojoCad.Agent.Tests
         [Fact]
         public void BuildAll_EveryTool_HasObjectParametersSchema()
         {
-            foreach (var tool in ToolRegistry.BuildAll())
+            foreach (var tool in ToolRegistry.BuildAll(includeCommandTool: true))
             {
                 Assert.Equal("function", tool.Type);
                 Assert.False(string.IsNullOrWhiteSpace(tool.Function.Description),
@@ -74,7 +75,7 @@ namespace MojoCad.Agent.Tests
         [Fact]
         public void RequiredArrays_ReferenceDeclaredProperties()
         {
-            foreach (var tool in ToolRegistry.BuildAll())
+            foreach (var tool in ToolRegistry.BuildAll(includeCommandTool: true))
             {
                 var schema = tool.Function.Parameters;
                 if (!schema.TryGetProperty("required", out var required)) continue;

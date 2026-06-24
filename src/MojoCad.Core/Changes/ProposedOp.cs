@@ -297,4 +297,30 @@ namespace MojoCad.Core.Changes
         /// <summary>New property overrides to apply, or null to leave unchanged.</summary>
         public PropertyOverrides? NewProps { get; set; }
     }
+
+    /// <summary>
+    /// Run a raw AutoCAD command sequence at apply time - the escape hatch that lets the agent reach
+    /// AutoCAD features that have no dedicated structured tool (FILLET, TRIM, EXTEND, dynamic-block edits,
+    /// XREF, PLOT, ...). It is still <i>staged and reviewed</i> like any other op: the command text and the
+    /// entities it will act on are shown on the review card, nothing executes until the engineer accepts,
+    /// and the execution joins the same single-undo group. Because a command's exact output cannot be known
+    /// before it runs, there is no green shape-preview for these ops - the engineer reviews the command itself.
+    /// This capability is OFF by default (see <c>MojoSettings.EnableCommandExecution</c>) and is intended for
+    /// validated, power-user use.
+    /// </summary>
+    public sealed class RunCommandOp : ProposedOp
+    {
+        public override OpKind Kind => OpKind.RunCommand;
+        // Treated as a modification (amber) for legend purposes; a command can add/modify/erase.
+        public override OpCategory Category => OpCategory.Modify;
+
+        /// <summary>The command name, e.g. "FILLET", "OFFSET", "-ARRAY" (use the "-" dialog-suppressing variants).</summary>
+        public string CommandName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The ordered responses fed to the command's prompts (option keywords, numbers, "x,y" points,
+        /// "" for Enter). Use "P" / "L" to reference the pre-selected <see cref="ProposedOp.TargetHandles"/>.
+        /// </summary>
+        public List<string> Inputs { get; set; } = new List<string>();
+    }
 }

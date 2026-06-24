@@ -19,7 +19,11 @@ namespace MojoCad.Agent.Tools
     /// </summary>
     public static class ToolRegistry
     {
-        public static List<ToolDef> BuildAll()
+        /// <summary>
+        /// Build the tool surface. <paramref name="includeCommandTool"/> adds the experimental
+        /// <c>run_command</c> power tool (only when the user has enabled command execution in settings).
+        /// </summary>
+        public static List<ToolDef> BuildAll(bool includeCommandTool = false)
         {
             var tools = new List<ToolDef>();
 
@@ -320,6 +324,20 @@ namespace MojoCad.Agent.Tools
                     ["question"] = Str("The question to ask."),
                     ["options"] = Arr(Str("A suggested answer."), "Optional suggested answers to offer as buttons.")
                 }, new[] { "question" })));
+
+            // --- POWER TOOL (opt-in): full AutoCAD command surface --------------------------------
+            if (includeCommandTool)
+            {
+                tools.Add(WriteTool(ToolNames.RunCommand,
+                    "Run a raw AutoCAD command to reach a feature with no dedicated tool (e.g. FILLET, CHAMFER, TRIM, EXTEND, JOIN, BREAK, EXPLODE, ALIGN, -ARRAY, MEASURE, DIVIDE, WIPEOUT, REVCLOUD, dynamic-block edits, XREF, -PLOT). This is STAGED and REVIEWED like any other op: the command text and target entities are shown for accept/reject, nothing runs until accepted, and it joins the same single undo step. Prefer dedicated structured tools when one exists; use this only for the long tail. Use the '-' (dialog-suppressing) variant of any command that opens a dialog. There is no shape-preview for commands - write a clear 'note'.",
+                    new Dictionary<string, object>
+                    {
+                        ["command"] = Str("The command name, e.g. \"FILLET\", \"OFFSET\", \"-ARRAY\". Use the '-' variant for dialog commands."),
+                        ["inputs"] = Arr(Str("One response to a command prompt."),
+                            "Ordered responses to the command's prompts: option keywords, numbers, points as \"x,y\", and \"\" for Enter. Use \"P\" (previous) or \"L\" (last) to act on the pre-selected 'targets'."),
+                        ["targets"] = Handles("Entities to pre-select before the command runs, so it can act on them via the Previous/Last selection.")
+                    }, new[] { "command" }));
+            }
 
             tools.Add(Tool(ToolNames.EmitChangeset,
                 "Finalise everything you have staged this turn into one reviewable change set and present it to the engineer for accept/reject. This is your ONLY path to the drawing - nothing is applied until the engineer accepts. Provide a clear plain-language summary.",
