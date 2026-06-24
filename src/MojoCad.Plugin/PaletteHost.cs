@@ -1,0 +1,62 @@
+using System;
+using System.Windows;
+using Autodesk.AutoCAD.Windows;
+using MojoCad.Core.Composition;
+using MojoCad.Ui;
+
+namespace MojoCad.Plugin
+{
+    /// <summary>
+    /// Owns the dockable <see cref="PaletteSet"/> that hosts the WPF chat view. The view is created once
+    /// (it carries the conversation state) and reused. The palette runs on AutoCAD's main/UI thread, so
+    /// the WPF content and the agent's dispatcher callbacks share that thread.
+    /// </summary>
+    internal static class PaletteHost
+    {
+        // Stable id so AutoCAD remembers the palette's dock state between sessions.
+        private static readonly Guid PaletteId = new Guid("7E2C0B40-6C2E-4C0A-9C3E-9B8F5A1D2E10");
+
+        private static PaletteSet? _paletteSet;
+        private static FrameworkElement? _view;
+
+        public static void Show(MojoServices services)
+        {
+            EnsureCreated(services);
+            _paletteSet!.Visible = true;
+        }
+
+        public static void Toggle(MojoServices services)
+        {
+            EnsureCreated(services);
+            _paletteSet!.Visible = !_paletteSet.Visible;
+        }
+
+        public static void Shutdown()
+        {
+            if (_paletteSet != null)
+            {
+                _paletteSet.Visible = false;
+                _paletteSet = null;
+            }
+            _view = null;
+        }
+
+        private static void EnsureCreated(MojoServices services)
+        {
+            if (_paletteSet != null) return;
+
+            _paletteSet = new PaletteSet("mojoCAD", PaletteId)
+            {
+                Style = PaletteSetStyles.ShowAutoHideButton
+                        | PaletteSetStyles.ShowCloseButton
+                        | PaletteSetStyles.Snappable,
+                DockEnabled = DockSides.Left | DockSides.Right,
+                MinimumSize = new System.Drawing.Size(360, 480),
+                KeepFocus = true
+            };
+
+            _view = MojoUi.CreateChatView(services);
+            _paletteSet.AddVisual("Chat", _view);
+        }
+    }
+}

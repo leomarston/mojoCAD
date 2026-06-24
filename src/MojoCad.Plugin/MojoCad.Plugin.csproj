@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MojoCad.Plugin - the AutoCAD entry point and composition root. This is the
+    assembly the user NETLOADs. It wires the concrete adapters (Acad, Agent,
+    Core infrastructure) into a MojoServices container and hosts the WPF chat
+    palette (MojoCad.Ui) in a PaletteSet.
+
+    UseWPF is on because the plugin hosts WPF content in the palette. AutoCAD
+    assemblies are compile-only (ExcludeAssets=runtime) and must be x64.
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-windows;net48</TargetFrameworks>
+    <RootNamespace>MojoCad.Plugin</RootNamespace>
+    <AssemblyName>MojoCad.Plugin</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MojoCad.Core\MojoCad.Core.csproj" />
+    <ProjectReference Include="..\MojoCad.Agent\MojoCad.Agent.csproj" />
+    <ProjectReference Include="..\MojoCad.Acad\MojoCad.Acad.csproj" />
+    <ProjectReference Include="..\MojoCad.Ui\MojoCad.Ui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <PackageReference Include="AutoCAD.NET" Version="25.0.0">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="AutoCAD.NET" Version="24.3.0">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
