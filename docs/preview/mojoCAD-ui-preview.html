@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>mojoCAD — UI preview</title>
+<style>
+  /* ===== Exact palette pulled from src/MojoCad.Ui/Themes/Dark.xaml ===== */
+  :root{
+    --bg:#1B1D22; --surface:#22252B; --surfaceAlt:#2A2E36; --surfaceHover:#31353E;
+    --border:#353A44; --borderStrong:#454B57;
+    --text:#E6E8EC; --muted:#9AA0AB; --faint:#6B7079;
+    --accent:#4C8DFF; --accentHover:#5F9BFF; --accentMuted:#2C4A7A;
+    --add:#3FB950; --mod:#D9A23B; --erase:#E5484D; --org:#8B95A5;
+    --ok:#3FB950; --warn:#D9A23B; --danger:#E5484D;
+    --userBubble:#273043;
+    /* AutoCAD dark-theme chrome (approximate) */
+    --acadRibbon:#3A3A3A; --acadRibbonAlt:#444; --acadCanvas:#141618; --acadBar:#2B2B2B; --acadTitle:#202020;
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0d0e10;color:var(--text);padding:28px 18px 60px;}
+  h1{font-size:24px;margin:0 0 4px;font-weight:650;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 28px;max-width:820px;line-height:1.5}
+  h2{font-size:15px;color:var(--accent);margin:34px 0 12px;font-weight:600;
+     border-top:1px solid #222;padding-top:22px;letter-spacing:.3px}
+  .cap{color:var(--faint);font-size:12.5px;margin:0 0 14px;max-width:780px;line-height:1.5}
+  .frameWrap{max-width:1040px}
+
+  /* ===== AutoCAD window chrome ===== */
+  .acad{border-radius:8px;overflow:hidden;border:1px solid #000;box-shadow:0 18px 50px rgba(0,0,0,.55);max-width:1040px}
+  .titlebar{background:var(--acadTitle);height:34px;display:flex;align-items:center;padding:0 12px;font-size:12.5px;color:#cfd2d6;gap:10px}
+  .titlebar .dot{width:14px;height:14px;border-radius:3px}
+  .winbtns{margin-left:auto;display:flex;gap:18px;color:#9aa0ab;font-size:13px}
+  .ribbon{background:var(--acadRibbon);border-bottom:1px solid #222}
+  .tabs{display:flex;gap:2px;padding:6px 8px 0;font-size:12px;color:#c7cace}
+  .tabs .t{padding:5px 12px;border-radius:5px 5px 0 0;cursor:default}
+  .tabs .t.active{background:var(--acadCanvas);color:#fff}
+  .tabs .t.mojo{color:#7fb0ff;font-weight:600}
+  .panelrow{display:flex;gap:16px;padding:8px 12px;background:var(--acadRibbonAlt);font-size:11px;color:#bfc3c8;align-items:center}
+  .tool{display:flex;flex-direction:column;align-items:center;gap:3px;opacity:.9}
+  .tool .ic{width:26px;height:26px;border-radius:5px;background:#555;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .tool.mojo .ic{background:linear-gradient(135deg,#4C8DFF,#2C4A7A);color:#fff;font-weight:700}
+  .vline{width:1px;height:38px;background:#555}
+
+  .workspace{display:flex;background:var(--acadCanvas);height:560px}
+  .canvas{flex:1;position:relative;background:
+     radial-gradient(circle at 30% 20%, #1a1d20 0, var(--acadCanvas) 60%);overflow:hidden}
+  .cmdline{background:var(--acadBar);border-top:1px solid #111;font-family:Consolas,"SF Mono",monospace;
+     font-size:11.5px;color:#b9bdc2;padding:5px 10px;line-height:1.6}
+  .cmdline .muted{color:#777}
+  .statusbar{background:var(--acadTitle);height:24px;display:flex;align-items:center;gap:14px;padding:0 12px;font-size:11px;color:#8a8f96}
+
+  /* ===== The docked mojoCAD palette ===== */
+  .palette{width:374px;min-width:374px;background:var(--bg);border-left:1px solid #000;display:flex;flex-direction:column}
+  .pal-grip{writing-mode:vertical-lr;background:var(--acadTitle);color:#8a8f96;font-size:11px;
+     display:flex;align-items:center;justify-content:center;width:22px;letter-spacing:1px}
+  .pal-body{flex:1;display:flex;flex-direction:column;min-width:0}
+
+  /* top bar */
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:9px 12px;display:flex;align-items:center;gap:8px}
+  .conn{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .conn.idle{background:var(--faint)} .conn.err{background:var(--danger)} .conn.work{background:var(--accent)}
+  .brand{font-weight:600;font-size:14px}
+  .model{color:var(--faint);font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 6px}
+  .iconbtn{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+     color:var(--muted);cursor:pointer;font-size:15px}
+  .iconbtn:hover{background:var(--surfaceHover);color:var(--text)}
+
+  /* transcript */
+  .transcript{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+  .row-left{align-self:flex-start;max-width:88%}
+  .row-right{align-self:flex-end;max-width:88%}
+  .bubble-user{background:var(--userBubble);border-radius:10px 10px 2px 10px;padding:9px 12px;font-size:13px;line-height:1.45}
+  .bubble-ai{background:var(--surface);border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:9px 12px;font-size:13px;line-height:1.5}
+  .bubble-ai .cursorblink{color:var(--accent)}
+  .chip{display:inline-block;background:var(--surfaceAlt);color:var(--muted);font-size:11px;border-radius:4px;padding:2px 6px;margin-top:6px}
+
+  .tool-act{background:var(--surfaceAlt);border-radius:6px;padding:5px 9px;font-size:12px;color:var(--muted);
+     display:flex;align-items:center;gap:8px;align-self:flex-start;max-width:92%}
+  .tool-act .g{width:15px;text-align:center}
+  .spin{color:var(--accent)}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;align-self:flex-start;max-width:94%}
+  .card .h{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;margin-bottom:8px}
+  .stepnum{width:20px;height:20px;border-radius:10px;background:var(--accentMuted);display:inline-flex;
+     align-items:center;justify-content:center;font-size:11px;margin-right:8px;flex:none}
+  .step{display:flex;align-items:flex-start;margin:4px 0;font-size:13px;line-height:1.4}
+
+  /* review card */
+  .review{background:var(--surface);border:1px solid var(--border);border-radius:10px;align-self:stretch;overflow:hidden}
+  .rev-head{background:var(--surfaceAlt);padding:12px 14px}
+  .rev-title{font-weight:600;font-size:14px;margin-bottom:8px}
+  .rev-sum{color:var(--muted);font-size:13px;line-height:1.45;margin-bottom:9px}
+  .badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .badge{border-radius:4px;padding:2px 7px;font-size:11px;font-weight:500}
+  .b-add{background:var(--add);color:#0B1F0E} .b-mod{background:var(--mod);color:#231703}
+  .b-del{background:var(--erase);color:#fff} .b-org{background:var(--org);color:#13171D}
+  .layers{font-size:11px;color:var(--faint)}
+  .rows{padding:6px}
+  .oprow{display:flex;gap:8px;padding:8px;border-radius:6px;align-items:flex-start}
+  .oprow:hover{background:var(--surfaceHover)}
+  .cbx{width:18px;height:18px;border-radius:4px;border:1px solid var(--borderStrong);background:var(--surfaceAlt);flex:none;margin-top:1px;position:relative}
+  .cbx.on{background:var(--accent);border-color:var(--accent)}
+  .cbx.on:after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .cbx.off-disabled{opacity:.4}
+  .stripe{width:3px;border-radius:2px;flex:none;align-self:stretch}
+  .opbody{flex:1;min-width:0}
+  .opbadges{display:flex;gap:6px;align-items:center;margin-bottom:4px}
+  .tag{border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;color:#fff}
+  .opdesc{font-size:13px;line-height:1.4}
+  .oplayer{font-size:10px;color:var(--faint);margin-top:2px}
+  .lint{background:var(--surface);border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px}
+  .zoom{color:var(--muted);font-size:13px;align-self:flex-start;cursor:pointer}
+  .selsum{padding:8px 14px 0;font-size:11px;color:var(--muted)}
+  .actionbar{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .btnrow{display:flex;gap:8px}
+  .btn{border-radius:6px;font-size:12px;padding:6px 12px;cursor:pointer;border:1px solid transparent;text-align:center}
+  .btn-accent{background:var(--accent);color:#fff;padding:8px 16px;font-size:13px}
+  .btn-ghost{background:transparent;border-color:var(--borderStrong);color:var(--text)}
+  .applied-banner{padding:12px 14px;background:rgba(63,185,80,.10);color:var(--ok);font-size:13px;display:flex;gap:12px;align-items:center}
+  .link{color:var(--accent);cursor:pointer}
+
+  /* composer */
+  .composer{background:var(--surface);border-top:1px solid var(--border);padding:10px 12px}
+  .ctxchip{display:inline-flex;align-items:center;gap:5px;border-radius:12px;padding:4px 10px;font-size:12px;
+     background:var(--surfaceAlt);border:1px solid var(--border);color:var(--text);margin-bottom:8px}
+  .ctxchip.on{background:var(--accentMuted);border-color:var(--accent)}
+  .inputrow{display:flex;gap:8px;align-items:flex-end}
+  .input{flex:1;background:var(--surfaceAlt);border:1px solid var(--border);border-radius:6px;padding:9px 10px;
+     color:var(--text);font-size:13px;min-height:38px}
+  .input.empty{color:var(--faint)}
+  .send{width:40px;height:38px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
+  .footer{background:var(--bg);padding:5px 12px;display:flex;justify-content:space-between;font-size:11px;color:var(--faint)}
+
+  /* settings */
+  .settings{width:374px;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .set-head{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
+  .set-head .t{font-size:15px;font-weight:600}
+  .set-body{padding:14px;display:flex;flex-direction:column;gap:12px;max-height:620px;overflow:auto}
+  .seccard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .sectitle{font-size:13px;font-weight:600;margin-bottom:8px}
+  .flabel{font-size:12px;color:var(--muted);margin:8px 0 4px}
+  .field{background:var(--surfaceAlt);border:1px solid var(--border);border-radius:6px;padding:9px 10px;font-size:13px;display:flex;align-items:center;justify-content:space-between}
+  .field .ph{color:var(--faint)}
+  .combo:after{content:"▾";color:var(--muted)}
+  .hintbox{background:var(--accentMuted);border-radius:6px;padding:10px;font-size:12px;margin-bottom:8px;line-height:1.4}
+  .keynote{font-size:11px;color:var(--faint);margin-top:10px;line-height:1.45}
+  .statusdot{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px}
+  .set-foot{background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;display:flex;justify-content:flex-end;gap:8px}
+  .twocol{display:flex;gap:12px}.twocol>div{flex:1}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 18px;font-size:12.5px;color:var(--muted)}
+  .legend b{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .note{background:#15171b;border:1px solid #222;border-radius:8px;padding:12px 14px;color:var(--muted);font-size:12.5px;line-height:1.55;max-width:1040px;margin-top:10px}
+  .twoup{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+</style>
+</head>
+<body>
+
+<h1>mojoCAD — what it looks like inside AutoCAD</h1>
+<p class="sub">A faithful mockup rendered from the actual UI code in this repo (the real dark-theme colors, labels and layout).
+This is a static HTML preview so you can see it without a Windows machine — the live plugin is a dockable WPF palette inside AutoCAD.</p>
+
+<div class="legend">
+  <span><b style="background:#3FB950"></b>Green = new geometry</span>
+  <span><b style="background:#D9A23B"></b>Amber = modified</span>
+  <span><b style="background:#E5484D"></b>Red = deleted</span>
+  <span><b style="background:#8B95A5"></b>Slate = organisational (layers)</span>
+</div>
+
+<!-- ============================================================= SCREEN 1 -->
+<h2>1 · The chat palette docked in AutoCAD — proposing &amp; previewing a change</h2>
+<p class="cap">You type a request; mojoCAD reads the drawing, plans, stages the geometry, and shows it <i>previewed on-canvas in green</i> plus a review card. Nothing is committed yet.</p>
+
+<div class="acad">
+  <div class="titlebar"><div class="dot" style="background:linear-gradient(135deg,#4C8DFF,#2C4A7A)"></div>
+    Level-2.dwg &nbsp;—&nbsp; AutoCAD 2025
+    <span class="winbtns"><span>—</span><span>▢</span><span>✕</span></span>
+  </div>
+  <div class="ribbon">
+    <div class="tabs">
+      <div class="t">Home</div><div class="t">Insert</div><div class="t">Annotate</div>
+      <div class="t">View</div><div class="t">Manage</div><div class="t">Output</div>
+      <div class="t active mojo">mojoCAD</div>
+    </div>
+    <div class="panelrow">
+      <div class="tool mojo"><div class="ic">M</div><span>Chat</span></div>
+      <div class="tool mojo"><div class="ic" style="background:#333">⚙</div><span>Settings</span></div>
+      <div class="vline"></div>
+      <div class="tool"><div class="ic">/</div><span>Line</span></div>
+      <div class="tool"><div class="ic">▭</div><span>Rect</span></div>
+      <div class="tool"><div class="ic">◯</div><span>Circle</span></div>
+      <div class="tool"><div class="ic">⊿</div><span>Dim</span></div>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <!-- model space with a floor plan + GREEN preview of the proposed wall + door -->
+    <div class="canvas">
+      <svg width="100%" height="100%" viewBox="0 0 640 560" preserveAspectRatio="xMidYMid meet">
+        <!-- existing building (light gray) -->
+        <g stroke="#C8CCD2" stroke-width="2" fill="none">
+          <rect x="120" y="150" width="400" height="280"/>
+          <line x1="120" y1="300" x2="330" y2="300"/>     <!-- interior partition -->
+          <line x1="330" y1="300" x2="330" y2="430"/>
+        </g>
+        <!-- existing door swing (gray) -->
+        <path d="M220 300 A40 40 0 0 1 260 340" stroke="#9AA0AB" stroke-width="1.5" fill="none"/>
+        <!-- ===== PROPOSED (green preview) ===== -->
+        <g stroke="#3FB950" stroke-width="3" fill="none" style="filter:drop-shadow(0 0 4px rgba(63,185,80,.6))">
+          <!-- new 200mm wall along the north edge, drawn as a double line -->
+          <line x1="120" y1="146" x2="520" y2="146"/>
+          <line x1="120" y1="154" x2="380" y2="154"/>
+          <line x1="430" y1="154" x2="520" y2="154"/>
+          <!-- door opening jambs + 900mm swing -->
+          <line x1="380" y1="150" x2="380" y2="118"/>
+          <path d="M380 150 A48 48 0 0 1 428 102" stroke="#3FB950" stroke-width="2"/>
+          <line x1="430" y1="150" x2="430" y2="154"/>
+        </g>
+        <!-- green dimension hint -->
+        <g stroke="#3FB950" stroke-width="1" opacity=".8">
+          <line x1="120" y1="100" x2="380" y2="100"/>
+          <text x="240" y="94" fill="#3FB950" font-size="13" font-family="Consolas,monospace" text-anchor="middle">1200</text>
+        </g>
+        <!-- UCS icon -->
+        <g stroke="#5aa0ff" stroke-width="2" fill="none">
+          <line x1="40" y1="500" x2="40" y2="460"/><line x1="40" y1="500" x2="80" y2="500"/>
+          <text x="86" y="504" fill="#5aa0ff" font-size="12">X</text>
+          <text x="30" y="452" fill="#5aa0ff" font-size="12">Y</text>
+        </g>
+        <!-- faint crosshair -->
+        <g stroke="#33373d" stroke-width="1"><line x1="300" y1="0" x2="300" y2="560"/><line x1="0" y1="250" x2="640" y2="250"/></g>
+      </svg>
+      <div style="position:absolute;left:14px;top:12px;font-size:11px;color:#3FB950;background:rgba(0,0,0,.4);padding:3px 8px;border-radius:5px">● live preview — accept to commit</div>
+    </div>
+
+    <!-- the docked palette -->
+    <div class="palette">
+      <div class="pal-body">
+        <div class="topbar">
+          <span class="conn work"></span><span class="brand">mojoCAD</span>
+          <span class="model">anthropic/claude-opus-4.8</span>
+          <span class="iconbtn">🗋</span><span class="iconbtn">⚙</span>
+        </div>
+
+        <div class="transcript">
+          <div class="row-right"><div class="bubble-user">Draw a 200&nbsp;mm wall along the north edge from (0,6000) to (8000,6000), and add a 900&nbsp;mm door 1.2&nbsp;m from the west end.</div>
+            <div style="text-align:right"><span class="chip">⊕ Current selection</span></div></div>
+
+          <div class="card">
+            <div class="h">📋 Plan</div>
+            <div class="step"><span class="stepnum">1</span><span>Read the drawing units &amp; the north edge geometry.</span></div>
+            <div class="step"><span class="stepnum">2</span><span>Create layer A-WALL; draw a 200&nbsp;mm wall along the north edge.</span></div>
+            <div class="step"><span class="stepnum">3</span><span>Place a 900&nbsp;mm door 1.2&nbsp;m from the west end on A-DOOR.</span></div>
+          </div>
+
+          <div class="tool-act"><span class="g">✓</span>Read drawing summary (units: Millimeters, 6 layers)</div>
+          <div class="tool-act"><span class="g">✓</span>Staged wall (width 200) on A-WALL</div>
+          <div class="tool-act"><span class="g">✓</span>Staged door (900) in wall at offset 1200</div>
+
+          <div class="bubble-ai row-left">I’ve staged a 200&nbsp;mm wall along the north edge and a 900&nbsp;mm door 1.2&nbsp;m from the west end. Review and accept below — please confirm the door swing direction.</div>
+
+          <!-- REVIEW CARD -->
+          <div class="review">
+            <div class="rev-head">
+              <div class="rev-title">Proposed changes</div>
+              <div class="rev-sum">Add a 200&nbsp;mm north wall on A-WALL and a 900&nbsp;mm door on A-DOOR, 1.2&nbsp;m from the west end.</div>
+              <div class="badges">
+                <span class="badge b-add">+3 new</span>
+                <span class="badge b-org">2 org</span>
+              </div>
+              <div class="layers">Layers: A-DOOR, A-WALL</div>
+            </div>
+            <div class="rows">
+              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--org)"></div>
+                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--org)">ORG</span></div>
+                  <div class="opdesc">Create layer A-WALL (color 7)</div><div class="oplayer">A-WALL</div></div><span class="zoom">⤢</span></div>
+              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--org)"></div>
+                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--org)">ORG</span></div>
+                  <div class="opdesc">Create layer A-DOOR (color 30)</div><div class="oplayer">A-DOOR</div></div><span class="zoom">⤢</span></div>
+              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
+                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
+                  <div class="opdesc">Wall, width 200, 8.00&nbsp;m run</div><div class="oplayer">A-WALL</div></div><span class="zoom">⤢</span></div>
+              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
+                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
+                  <div class="opdesc">Door 900 with swing + jambs</div><div class="oplayer">A-DOOR</div></div><span class="zoom">⤢</span></div>
+              <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
+                <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
+                  <div class="opdesc">Door tag “D-01”</div><div class="oplayer">A-DOOR</div></div><span class="zoom">⤢</span></div>
+            </div>
+            <div class="selsum">5 of 5 selected</div>
+            <div class="actionbar">
+              <div class="btnrow"><div class="btn btn-ghost">Accept all</div><div class="btn btn-ghost">Reject all</div></div>
+              <div class="btnrow"><div class="btn btn-ghost">Reject</div><div class="btn btn-accent">Accept &amp; apply</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer">
+          <span class="ctxchip on">⊕ Selection</span>
+          <div class="inputrow"><div class="input empty">Ask mojoCAD to draw or edit…</div><div class="send">↑</div></div>
+        </div>
+        <div class="footer"><span>Reviewing 5 staged operations</span><span>1,840 in / 612 out · $0.0091</span></div>
+      </div>
+      <div class="pal-grip">mojoCAD</div>
+    </div>
+  </div>
+
+  <div class="cmdline">
+    <div>Command: <span style="color:#fff">MOJO</span></div>
+    <div class="muted">mojoCAD: staged 5 operations — review in the palette. Nothing applied until you accept.</div>
+    <div>Command: </div>
+  </div>
+  <div class="statusbar"><span>MODEL</span><span>⊞ GRID</span><span>⊾ SNAP</span><span>⊥ ORTHO</span><span style="margin-left:auto">Millimeters</span></div>
+</div>
+
+<!-- ============================================================= SCREEN 2 -->
+<h2>2 · The accept / reject review card — close-up (all change types)</h2>
+<p class="cap">Each operation is one reviewable row with a checkbox. Counts are computed by the plugin (never taken from the model). Deletions and anything that fails a life-safety lint default to <i>unticked</i>; a Blocking issue disables the tick entirely.</p>
+
+<div class="twoup">
+  <div class="review" style="max-width:420px">
+    <div class="rev-head">
+      <div class="rev-title">Proposed changes
+        <span class="badge b-del" style="margin-left:8px">REVIEW BLOCKED</span></div>
+      <div class="rev-sum">Re-route the branch line, widen corridor B, and remove the superseded riser.</div>
+      <div class="badges">
+        <span class="badge b-add">+2 new</span>
+        <span class="badge b-mod">~1 modified</span>
+        <span class="badge b-del">−1 erased</span>
+      </div>
+      <div class="layers">Layers: A-WALL, FP-SPKL, M-PIPE</div>
+    </div>
+    <div class="rows">
+      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
+        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
+          <div class="opdesc">Sprinkler branch, single-line, 8 heads</div><div class="oplayer">FP-SPKL</div></div><span class="zoom">⤢</span></div>
+
+      <div class="oprow"><div class="cbx off-disabled"></div><div class="stripe" style="background:var(--add)"></div>
+        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span><span class="tag" style="background:var(--erase)">BLOCKING</span></div>
+          <div class="opdesc">Place sprinklers @ 4.6&nbsp;m grid</div><div class="oplayer">FP-SPKL</div>
+          <div class="lint"><div style="color:var(--erase)">Spacing exceeds NFPA 13 max for this hazard.</div>
+            <div style="color:var(--faint);margin-top:2px">Confirm coverage spacing before applying.</div></div></div><span class="zoom">⤢</span></div>
+
+      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--mod)"></div>
+        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--mod)">MODIFY</span></div>
+          <div class="opdesc">Move 1 entity (corridor face)</div><div class="oplayer">A-WALL</div></div><span class="zoom">⤢</span></div>
+
+      <div class="oprow"><div class="cbx"></div><div class="stripe" style="background:var(--erase)"></div>
+        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--erase)">ERASE</span><span class="tag" style="background:var(--mod)">WARNING</span></div>
+          <div class="opdesc">Erase 1 entity (old riser)</div><div class="oplayer">M-PIPE</div></div><span class="zoom">⤢</span></div>
+    </div>
+    <div class="selsum">2 of 4 selected</div>
+    <div class="actionbar">
+      <div class="btnrow"><div class="btn btn-ghost">Accept all</div><div class="btn btn-ghost">Reject all</div></div>
+      <div class="btnrow"><div class="btn btn-ghost">Reject</div><div class="btn btn-accent" style="opacity:.55">Accept &amp; apply</div></div>
+    </div>
+  </div>
+
+  <div class="review" style="max-width:420px">
+    <div class="rev-head"><div class="rev-title">Proposed changes</div>
+      <div class="rev-sum">Add the north wall and door.</div>
+      <div class="badges"><span class="badge b-add">+3 new</span></div>
+      <div class="layers">Layers: A-DOOR, A-WALL</div></div>
+    <div class="rows">
+      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
+        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
+          <div class="opdesc">Wall, width 200, 8.00&nbsp;m run</div><div class="oplayer">A-WALL</div>
+          <div style="color:var(--ok);font-size:10px;margin-top:3px">✓ applied</div></div></div>
+      <div class="oprow"><div class="cbx on"></div><div class="stripe" style="background:var(--add)"></div>
+        <div class="opbody"><div class="opbadges"><span class="tag" style="background:var(--add)">ADD</span></div>
+          <div class="opdesc">Door 900 with swing + jambs</div><div class="oplayer">A-DOOR</div>
+          <div style="color:var(--ok);font-size:10px;margin-top:3px">✓ applied</div></div></div>
+    </div>
+    <div class="applied-banner">✓ Applied as one undo step <span class="link">Undo</span></div>
+  </div>
+</div>
+
+<!-- ============================================================= SCREEN 3 -->
+<h2>3 · Settings — paste your OpenRouter key, pick a model, set standards</h2>
+<p class="cap">Opened from the gear in the palette top-bar. The key is validated against OpenRouter and stored DPAPI-encrypted on your machine — never in the drawing or the repo.</p>
+
+<div class="settings">
+  <div class="set-head"><span class="t">Settings</span><span class="iconbtn">✕</span></div>
+  <div class="set-body">
+
+    <div class="seccard">
+      <div class="sectitle">OpenRouter API key</div>
+      <div class="field"><span>••••••••••••••••••••••••sk-or</span><span>👁</span></div>
+      <div class="btnrow" style="margin-top:10px">
+        <div class="btn btn-ghost">Test connection</div>
+        <div class="btn btn-accent">Save key</div>
+        <div class="link" style="align-self:center;font-size:12px">Remove</div>
+      </div>
+      <div class="statusdot"><span class="conn" style="position:static"></span><span style="color:var(--ok)">Connected · $18.40 of $25.00 remaining</span></div>
+      <div class="keynote">Your key is encrypted with Windows DPAPI and stored locally. It never leaves this machine except as the Authorization header sent directly to OpenRouter.</div>
+    </div>
+
+    <div class="seccard">
+      <div class="sectitle">Model</div>
+      <div class="flabel">Primary model</div>
+      <div class="field combo"><span>Claude Opus 4.8 — strongest tool-use; default for life-safety</span></div>
+      <div class="btnrow" style="margin-top:8px"><div class="btn btn-ghost">Refresh models</div>
+        <span style="align-self:center;font-size:11px;color:var(--faint)">312 tool-capable models loaded</span></div>
+      <div class="flabel">Fallback models (comma-separated)</div>
+      <div class="field"><span>anthropic/claude-sonnet-4.6, openai/gpt-5.5</span></div>
+      <div class="twocol">
+        <div><div class="flabel">Temperature</div><div class="field"><span>0.2</span></div></div>
+        <div><div class="flabel">Max tokens</div><div class="field"><span>4096</span></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px">
+        <span class="cbx on"></span>Only use providers that don’t log or train on prompts</div>
+    </div>
+
+    <div class="seccard">
+      <div class="sectitle">Drafting standards</div>
+      <div class="flabel">Discipline preset</div>
+      <div class="field combo"><span>Fire &amp; Life-Safety</span></div>
+      <div class="flabel">Layer standard</div>
+      <div class="field combo"><span>AIA / US National CAD Standard</span></div>
+      <div class="flabel">Code references</div>
+      <div class="field"><span class="ph">IBC 2021, NFPA 13, NFPA 101</span></div>
+      <div class="flabel">Annotation scale</div>
+      <div class="field"><span class="ph">1:50</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px">
+        <span class="cbx on off-disabled"></span>Require plan approval before the agent acts</div>
+      <div style="font-size:11px;color:var(--faint);margin:2px 0 0 26px">Always on for Fire &amp; Life-Safety.</div>
+    </div>
+
+  </div>
+  <div class="set-foot"><div class="btn btn-ghost">Cancel</div><div class="btn btn-accent">Save</div></div>
+</div>
+
+<!-- ============================================================= SCREEN 4 -->
+<h2>4 · First run &amp; “while it’s thinking”</h2>
+<div class="twoup">
+  <div class="palette" style="height:360px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <div class="pal-body">
+      <div class="topbar"><span class="conn idle"></span><span class="brand">mojoCAD</span>
+        <span class="model">claude-opus-4.8</span><span class="iconbtn">🗋</span><span class="iconbtn">⚙</span></div>
+      <div class="transcript">
+        <div class="card" style="background:var(--surfaceAlt);align-self:stretch">
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px">Welcome to mojoCAD</div>
+          <div style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:10px">Chat in plain English to draft and edit your drawing. mojoCAD stages every change for your review — nothing touches the drawing until you accept it. To begin, add your OpenRouter API key.</div>
+          <div class="btn btn-accent" style="display:inline-block">Open Settings to add your key</div>
+        </div>
+      </div>
+      <div class="footer" style="border-top:1px solid var(--border)"><span>Add your OpenRouter key to begin</span><span></span></div>
+    </div>
+  </div>
+
+  <div class="palette" style="height:360px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <div class="pal-body">
+      <div class="topbar"><span class="conn work"></span><span class="brand">mojoCAD</span>
+        <span class="model">claude-opus-4.8</span><span class="iconbtn">🗋</span><span class="iconbtn">⚙</span></div>
+      <div class="transcript">
+        <div class="row-right"><div class="bubble-user">Add room tags with areas to every space on this level.</div></div>
+        <div class="tool-act"><span class="g spin">◐</span>Reading the drawing…</div>
+        <div class="tool-act"><span class="g">✓</span>Queried entities (14 closed rooms found)</div>
+        <div class="tool-act"><span class="g spin">◐</span>Measuring areas…</div>
+        <div class="bubble-ai row-left">Tagging 14 rooms — computing each area with the CAD engine so the numbers are exact<span class="cursorblink">▍</span></div>
+      </div>
+      <div class="composer">
+        <div class="inputrow"><div class="input empty">Ask mojoCAD to draw or edit…</div>
+          <div class="send" style="background:transparent;border:1px solid var(--borderStrong);color:var(--text)">■</div></div>
+      </div>
+      <div class="footer"><span>Measuring…</span><span>working</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <b>How it behaves (the important part):</b> mojoCAD never edits your drawing directly. The AI can only <i>stage</i> a change set,
+  which you preview on-canvas (green = new, amber = modified, red = deleted) and accept per-row or wholesale. Accepting applies the
+  selected operations as a <b>single Ctrl+Z step</b>; rejecting leaves the drawing untouched. For Fire &amp; Life-Safety work it must
+  present a plan and may ask clarifying questions before acting — it won’t guess code parameters. You remain the engineer of record.
+</div>
+
+</body>
+</html>
