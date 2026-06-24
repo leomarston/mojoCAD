@@ -1,0 +1,47 @@
+<Project>
+
+  <!--
+    Shared MSBuild properties for every project in the mojoCAD solution.
+    See docs/ARCHITECTURE.md and docs/BUILD.md for the rationale behind the
+    multi-targeting and AutoCAD reference strategy.
+  -->
+
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NeutralLanguage>en-US</NeutralLanguage>
+
+    <Product>mojoCAD</Product>
+    <Company>mojoCAD</Company>
+    <Authors>mojoCAD</Authors>
+    <Copyright>Copyright © mojoCAD</Copyright>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+
+    <!--
+      AutoCAD loads managed plugins into its own AppDomain. We never want our
+      build to drag AutoCAD's own assemblies (acmgd, acdbmgd, accoremgd,
+      AdWindows) into the output folder - they are provided by the running
+      AutoCAD process. Projects that reference AutoCAD set <Private>false</Private>
+      / ExcludeAssets=runtime on those references (see MojoCad.Acad.csproj).
+    -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!--
+    AutoCAD 2025+ runs on .NET 8; AutoCAD 2021-2024 runs on .NET Framework 4.8.
+    The managed ObjectARX API surface we use is identical across both, so we
+    multi-target and ship a single codebase. Individual csproj files choose
+    their <TargetFrameworks> (UI/AutoCAD projects need the -windows TFM for WPF).
+  -->
+  <PropertyGroup>
+    <MojoNet8>net8.0-windows</MojoNet8>
+    <MojoNet48>net48</MojoNet48>
+  </PropertyGroup>
+
+</Project>

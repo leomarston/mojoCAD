@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MojoCad.Core - the domain. Pure managed code with NO dependency on AutoCAD
+    or WPF. Holds the change-set model, settings, DTOs and the "ports"
+    (interfaces) that the adapter projects implement. Multi-targeted so the
+    same assembly serves AutoCAD 2025 (.NET 8) and AutoCAD 2021-2024 (.NET 4.8).
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <RootNamespace>MojoCad.Core</RootNamespace>
+    <AssemblyName>MojoCad.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <!-- System.Text.Json ships in the runtime on net8; on net48 it's a package. -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <!-- DPAPI (ProtectedData) is in-box on .NET Framework. -->
+    <Reference Include="System.Security" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <!-- DPAPI for the OpenRouter key on .NET 8 (Windows-only at runtime, which is all we ship to). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
