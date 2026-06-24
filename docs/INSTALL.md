@@ -1,10 +1,38 @@
 # Installing mojoCAD into AutoCAD
 
-mojoCAD is a compiled AutoCAD .NET plugin. Because it ships as source, it must be
-built **once**; after that it installs as an AutoCAD **Autoloader bundle** that
-loads automatically every time you start AutoCAD — you never run `NETLOAD`.
+mojoCAD is a compiled AutoCAD .NET plugin. There are two ways to install it:
 
-## The one-step way (Windows)
+- **A. Download a prebuilt installer** (no SDK, no command line) — the normal end-user way.
+- **B. Build from source** (for developers, or before CI has published a build) — *preserved below, unchanged.*
+
+---
+
+## A. Download a prebuilt installer (recommended)
+
+CI (GitHub Actions) compiles and packages mojoCAD on every push. Grab the result and install it — nothing to build on your machine.
+
+**Where to get it:**
+- **Releases:** the repo's **Releases** page (attached to each `v*` tag) — `mojoCAD-Setup.exe` and `mojoCAD-bundle.zip`.
+- **Latest build:** the **Actions** tab → the most recent green `build` run → **Artifacts** → `mojoCAD-installers`.
+
+**Then pick one:**
+
+- **One-click installer (the "button"):** download **`mojoCAD-Setup.exe`**, double-click it (per-user, no admin), restart AutoCAD, type **`MOJO`**.
+- **Drop-in folder (the "drop the files in" way):** download **`mojoCAD-bundle.zip`**, unzip it, and move the `mojoCAD.bundle` folder into:
+  ```
+  %APPDATA%\Autodesk\ApplicationPlugins\
+  ```
+  Restart AutoCAD, type **`MOJO`**. (AutoCAD auto-loads anything in that folder.)
+
+Either way, finish setup in the palette: **⚙ gear → paste your OpenRouter API key → Test connection → Save.**
+
+> Note: the very first CI build is also where any AutoCAD-API compile errors surface. If the `build` run is red, that's expected for a fresh codebase — the errors are in the run log and are quick to fix.
+
+---
+
+## B. Build from source (developers) — the original one-step way
+
+> This is the from-source path described earlier; it is fully preserved.
 
 1. Make sure the **.NET 8 SDK** is installed (`winget install Microsoft.DotNet.SDK.8`,
    or <https://dotnet.microsoft.com/download/dotnet/8.0>).

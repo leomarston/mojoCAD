@@ -1,0 +1,79 @@
+name: build
+
+# Compiles mojoCAD against the AutoCAD.NET reference assemblies (no AutoCAD needed),
+# runs the unit tests, and publishes the end-user installers as downloadable artifacts:
+#   - mojoCAD-bundle.zip   (drop the mojoCAD.bundle folder into %APPDATA%\Autodesk\ApplicationPlugins\)
+#   - mojoCAD-Setup.exe    (one-click per-user installer)
+# On a version tag (v*) those files are also attached to a GitHub Release.
+#
+# This does NOT replace the from-source install (build\install.ps1) - that path is preserved.
+
+on:
+  push:
+    branches: [ main, 'claude/**' ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore mojoCAD.sln
+
+      # Builds every project for both TFMs (net8.0-windows + net48). This is the step that
+      # flushes out any AutoCAD-API signature mismatches - if it goes red, the errors are here.
+      - name: Build (Release)
+        run: dotnet build mojoCAD.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test mojoCAD.sln -c Release --no-build --verbosity normal
+
+      # ---- Package the downloadable bundle + zip ----
+      - name: Package bundle
+        shell: pwsh
+        run: ./build/package.ps1
+
+      # ---- Build the one-click installer ----
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer (.exe)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & "$iscc" `
+            "/DSourceBundle=${{ github.workspace }}\dist\mojoCAD.bundle" `
+            "/DOutDir=${{ github.workspace }}\dist" `
+            "${{ github.workspace }}\build\installer\mojoCAD.iss"
+
+      # ---- Publish artifacts ----
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mojoCAD-installers
+          path: |
+            dist/mojoCAD-bundle.zip
+            dist/mojoCAD-Setup.exe
+          if-no-files-found: error
+
+      - name: Attach to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/mojoCAD-bundle.zip
+            dist/mojoCAD-Setup.exe
