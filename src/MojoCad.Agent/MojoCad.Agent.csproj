@@ -17,6 +17,16 @@
     <ProjectReference Include="..\MojoCad.Core\MojoCad.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    The OpenRouter client keeps its /key and /models parsers as internal static
+    methods (they are an implementation detail, not part of the public surface).
+    Expose them to the test assembly so ParseKeyInfo/ParseModels can be unit-tested
+    directly without standing up an HTTP server.
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="MojoCad.Agent.Tests" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
