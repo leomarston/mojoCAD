@@ -1,0 +1,235 @@
+<UserControl x:Class="MojoCad.Ui.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:beh="clr-namespace:MojoCad.Ui.Behaviors"
+             xmlns:conv="clr-namespace:MojoCad.Ui.Converters"
+             xmlns:vm="clr-namespace:MojoCad.Ui.ViewModels"
+             mc:Ignorable="d"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             d:DesignWidth="380" d:DesignHeight="640"
+             Background="{DynamicResource Brush.Bg}">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <conv:BoolNegationConverter x:Key="Negate" />
+        <conv:NullToCollapsedConverter x:Key="NullToVis" />
+        <conv:StatusKindToBrushConverter x:Key="StatusToBrush" />
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Text}" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+            <Setter Property="Margin" Value="0,8,0,4" />
+        </Style>
+        <Style x:Key="SectionCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- header -->
+        <Border Grid.Row="0" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1" Padding="14,10">
+            <Grid>
+                <TextBlock Text="Settings" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Content="✕" Style="{DynamicResource IconButton}" HorizontalAlignment="Right"
+                        Command="{Binding CloseCommand}" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Style="{DynamicResource MojoScrollViewer}" Padding="14,12">
+            <StackPanel>
+
+                <!-- ============ OpenRouter key ============ -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="OpenRouter API key" Style="{StaticResource SectionTitle}" />
+
+                        <!-- onboarding hint when no key -->
+                        <Border Background="{DynamicResource Brush.AccentMuted}" CornerRadius="6" Padding="10" Margin="0,0,0,8"
+                                Visibility="{Binding HasKey, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Brush.Text}">
+                                Paste your key from openrouter.ai/keys to connect mojoCAD to the model.
+                            </TextBlock>
+                        </Border>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <!-- masked entry (default) -->
+                            <PasswordBox x:Name="KeyPasswordBox" Grid.Column="0" Style="{DynamicResource MojoPasswordBox}"
+                                         beh:PasswordBoxBehavior.Attach="True"
+                                         beh:PasswordBoxBehavior.BoundPassword="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Visibility="{Binding IsKeyVisible, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                            <!-- visible entry (show toggle) -->
+                            <TextBox Grid.Column="0" Style="{DynamicResource MojoTextBox}"
+                                     Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Visibility="{Binding IsKeyVisible, Converter={StaticResource BoolToVis}}" />
+                            <Button Grid.Column="1" Content="👁" Style="{DynamicResource IconButton}" Margin="6,0,0,0"
+                                    ToolTip="Show / hide" Command="{Binding ToggleKeyVisibilityCommand}" />
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="Test connection" Style="{DynamicResource GhostButton}" Margin="0,0,8,0"
+                                    Command="{Binding TestConnectionCommand}" />
+                            <Button Content="Save key" Style="{DynamicResource AccentButton}" Margin="0,0,8,0"
+                                    Command="{Binding SaveKeyCommand}" />
+                            <Button Content="Remove" Style="{DynamicResource LinkButton}" VerticalAlignment="Center"
+                                    Command="{Binding DeleteKeyCommand}"
+                                    Visibility="{Binding HasKey, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center"
+                                     Fill="{Binding KeyStatusState, Converter={StaticResource StatusToBrush}}" />
+                            <TextBlock Text="{Binding KeyStatus}" FontSize="12" TextWrapping="Wrap" MaxWidth="280"
+                                       Foreground="{Binding KeyStatusState, Converter={StaticResource StatusToBrush}}" />
+                        </StackPanel>
+
+                        <TextBlock Margin="0,10,0,0" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource Brush.TextFaint}">
+                            Your key is encrypted with Windows DPAPI and stored locally. It never leaves this
+                            machine except as the Authorization header sent directly to OpenRouter.
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============ Model ============ -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Model" Style="{StaticResource SectionTitle}" />
+
+                        <TextBlock Text="Primary model" Style="{StaticResource FieldLabel}" />
+                        <ComboBox Style="{DynamicResource MojoComboBox}" ItemsSource="{Binding Models}"
+                                  SelectedValue="{Binding SelectedModelId, Mode=TwoWay}" SelectedValuePath="Id"
+                                  ItemContainerStyle="{DynamicResource MojoComboItem}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" />
+                                        <TextBlock Text="{Binding Note}" FontSize="10" Foreground="{DynamicResource Brush.TextFaint}"
+                                                   Visibility="{Binding Note, Converter={StaticResource NullToVis}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="Refresh models" Style="{DynamicResource GhostButton}"
+                                    Command="{Binding RefreshModelsCommand}" />
+                            <TextBlock Text="{Binding ModelStatus}" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"
+                                       Foreground="{DynamicResource Brush.TextFaint}" TextWrapping="Wrap" MaxWidth="200"
+                                       Visibility="{Binding ModelStatus, Converter={StaticResource NullToVis}}" />
+                        </StackPanel>
+
+                        <TextBlock Text="Fallback models (comma-separated)" Style="{StaticResource FieldLabel}" />
+                        <TextBox Style="{DynamicResource MojoTextBox}"
+                                 Text="{Binding FallbackModels, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Temperature" Style="{StaticResource FieldLabel}" />
+                                <TextBox Style="{DynamicResource MojoTextBox}"
+                                         Text="{Binding Temperature, Mode=TwoWay, StringFormat={}{0:0.0#}}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Max tokens" Style="{StaticResource FieldLabel}" />
+                                <TextBox Style="{DynamicResource MojoTextBox}"
+                                         Text="{Binding MaxTokens, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <CheckBox Style="{DynamicResource MojoCheckBox}" Margin="0,12,0,0"
+                                  IsChecked="{Binding DenyDataCollection, Mode=TwoWay}"
+                                  Content="Only use providers that don't log or train on prompts" />
+                    </StackPanel>
+                </Border>
+
+                <!-- ============ Standards ============ -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Drafting standards" Style="{StaticResource SectionTitle}" />
+
+                        <TextBlock Text="Discipline preset" Style="{StaticResource FieldLabel}" />
+                        <ComboBox Style="{DynamicResource MojoComboBox}" ItemsSource="{Binding Disciplines}"
+                                  SelectedItem="{Binding Discipline, Mode=TwoWay}"
+                                  ItemContainerStyle="{DynamicResource MojoComboItem}" />
+
+                        <TextBlock Text="Layer standard" Style="{StaticResource FieldLabel}" />
+                        <ComboBox Style="{DynamicResource MojoComboBox}" ItemsSource="{Binding LayerStandards}"
+                                  SelectedItem="{Binding LayerStandard, Mode=TwoWay}"
+                                  ItemContainerStyle="{DynamicResource MojoComboItem}" />
+
+                        <StackPanel Visibility="{Binding IsCustomLayerStandard, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Custom layer convention" Style="{StaticResource FieldLabel}" />
+                            <TextBox Style="{DynamicResource MojoTextBox}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="50"
+                                     Text="{Binding CustomLayerStandard, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <TextBlock Text="Code references" Style="{StaticResource FieldLabel}" />
+                        <TextBox Style="{DynamicResource MojoTextBox}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Text="{Binding CodeReferences, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="e.g. IBC 2021, NFPA 13, NFPA 101" />
+
+                        <TextBlock Text="Annotation scale" Style="{StaticResource FieldLabel}" />
+                        <TextBox Style="{DynamicResource MojoTextBox}"
+                                 Text="{Binding AnnotationScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="e.g. 1:50 or 1/4&quot;=1'" />
+
+                        <TextBlock Text="Additional guidance" Style="{StaticResource FieldLabel}" />
+                        <TextBox Style="{DynamicResource MojoTextBox}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"
+                                 Text="{Binding AdditionalGuidance, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <CheckBox Style="{DynamicResource MojoCheckBox}" Margin="0,14,0,0"
+                                  IsChecked="{Binding RequirePlanApproval, Mode=TwoWay}"
+                                  IsEnabled="{Binding IsPlanApprovalForced, Converter={StaticResource Negate}}"
+                                  Content="Require plan approval before the agent acts" />
+                        <TextBlock Text="Always on for Fire &amp; Life-Safety." FontSize="11" Margin="26,2,0,0"
+                                   Foreground="{DynamicResource Brush.TextFaint}"
+                                   Visibility="{Binding IsPlanApprovalForced, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- footer actions -->
+        <Border Grid.Row="2" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0" Padding="14,10">
+            <Grid>
+                <TextBlock Text="{Binding SavedNotice}" Foreground="{DynamicResource Brush.Ok}" VerticalAlignment="Center"
+                           FontSize="12" Visibility="{Binding SavedNotice, Converter={StaticResource NullToVis}}" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cancel" Style="{DynamicResource GhostButton}" Margin="0,0,8,0"
+                            Command="{Binding CloseCommand}" />
+                    <Button Content="Save" Style="{DynamicResource AccentButton}"
+                            Command="{Binding SaveAndCloseCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

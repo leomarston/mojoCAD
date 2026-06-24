@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Unit tests for MojoCad.Core - the pure domain. No AutoCAD, no WPF, so a single
+    net8.0 target is enough (the multi-targeting of the production assemblies is a
+    deployment concern, not a behavioural one we need to re-verify here).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>MojoCad.Core.Tests</RootNamespace>
+    <!--
+      The solution-wide Directory.Build.props sets CopyLocalLockFileAssemblies=false (so AutoCAD's
+      assemblies never get dragged into a plugin's output). Test projects are the opposite case: the
+      VSTest/xunit runner needs its dependencies copied next to the test assembly to be discovered and
+      run, so we restore the default here.
+    -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MojoCad.Core\MojoCad.Core.csproj" />
+  </ItemGroup>
+
+</Project>

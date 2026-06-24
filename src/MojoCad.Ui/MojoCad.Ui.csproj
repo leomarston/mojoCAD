@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MojoCad.Ui - the WPF chat palette ("Cursor for AutoCAD"). It depends ONLY on
+    MojoCad.Core (the ports/contracts), never on the Agent, Acad or AutoCAD
+    assemblies: the plugin composition root hands it a fully-wired MojoServices.
+    That keeps the UI testable and means swapping an adapter never touches the UI.
+
+    Multi-targeted (net8.0-windows for AutoCAD 2025+, net48 for AutoCAD 2021-2024)
+    because the dockable palette lives in-process with AutoCAD and must match its
+    runtime. The -windows TFM is required for <UseWPF>.
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-windows;net48</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>MojoCad.Ui</RootNamespace>
+    <AssemblyName>MojoCad.Ui</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MojoCad.Core\MojoCad.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <!-- Same pattern as the Agent project: STJ / async-interfaces ship in-box on
+         net8 but are packages on .NET Framework. The UI marshals async port calls,
+         so it needs the same modern async surface. -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

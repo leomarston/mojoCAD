@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Unit tests for MojoCad.Agent - the OpenRouter client and the agentic tool loop.
+    These exercise everything that runs OFF AutoCAD: SSE parsing, streamed tool-call
+    assembly, /key + /models parsing, tool-argument validation, the tool registry/
+    schema, and the tool executor against a fake IAcadBridge. Single net8.0 target.
+
+    NOTE: this assembly name must match the <InternalsVisibleTo> in
+    src/MojoCad.Agent/MojoCad.Agent.csproj so OpenRouterClient's internal
+    ParseKeyInfo/ParseModels are reachable from here.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>MojoCad.Agent.Tests</AssemblyName>
+    <RootNamespace>MojoCad.Agent.Tests</RootNamespace>
+    <!--
+      Directory.Build.props sets CopyLocalLockFileAssemblies=false for the plugin assemblies; the test
+      runner needs the opposite (its dependencies copied beside the test DLL), so restore the default.
+    -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MojoCad.Core\MojoCad.Core.csproj" />
+    <ProjectReference Include="..\..\src\MojoCad.Agent\MojoCad.Agent.csproj" />
+  </ItemGroup>
+
+</Project>

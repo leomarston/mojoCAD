@@ -1,0 +1,327 @@
+<UserControl x:Class="MojoCad.Ui.Views.ChatView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:MojoCad.Ui.ViewModels"
+             xmlns:conv="clr-namespace:MojoCad.Ui.Converters"
+             xmlns:views="clr-namespace:MojoCad.Ui.Views"
+             mc:Ignorable="d"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             d:DesignWidth="380" d:DesignHeight="640"
+             Background="{DynamicResource Brush.Bg}">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+            <conv:BoolNegationConverter x:Key="Negate" />
+            <conv:NullToCollapsedConverter x:Key="NullToVis" />
+            <conv:CountToVisibilityConverter x:Key="CountToVis" />
+            <conv:CategoryToBrushConverter x:Key="CatToBrush" />
+            <conv:SeverityToBrushConverter x:Key="SevToBrush" />
+            <conv:ConnectionStateToBrushConverter x:Key="ConnToBrush" />
+
+            <!-- ============================================================================
+                 Per-type message templates. The transcript's ItemsControl picks the right one
+                 automatically from each item's runtime type (implicit DataType templates), so
+                 we never branch on kind in code.
+                 ============================================================================ -->
+
+            <!-- User bubble: right-aligned, faint accent wash. -->
+            <DataTemplate DataType="{x:Type vm:UserMessageViewModel}">
+                <Grid Margin="36,4,0,4" HorizontalAlignment="Right">
+                    <StackPanel>
+                        <Border Background="{DynamicResource Brush.UserBubble}" CornerRadius="10,10,2,10"
+                                Padding="12,9" HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Attachments}" HorizontalAlignment="Right" Margin="0,4,2,0"
+                                      Visibility="{Binding Attachments.Count, Converter={StaticResource CountToVis}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="4" Padding="6,2" Margin="4,0,0,0">
+                                        <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+
+            <!-- Assistant prose: left-aligned plain bubble with a streaming caret. -->
+            <DataTemplate DataType="{x:Type vm:AssistantMessageViewModel}">
+                <Border Background="{DynamicResource Brush.AssistantBubble}" CornerRadius="10,10,10,2"
+                        Padding="12,9" Margin="0,4,36,4" HorizontalAlignment="Left"
+                        BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <views:MarkdownPresenter Markdown="{Binding DisplayText}" MaxWidth="300" />
+                        <TextBlock Text="▍" Foreground="{DynamicResource Brush.Accent}" Margin="2,0,0,0"
+                                   Visibility="{Binding IsStreaming, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- Tool activity: a compact, collapsible status row. -->
+            <DataTemplate DataType="{x:Type vm:ToolActivityViewModel}">
+                <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Padding="8,5" Margin="0,2,36,2"
+                        HorizontalAlignment="Left">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding StatusGlyph}" Width="16"
+                                       Foreground="{DynamicResource Brush.TextMuted}" />
+                            <TextBlock Text="{Binding Display}" Foreground="{DynamicResource Brush.TextMuted}"
+                                       FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="240" />
+                            <Button Content="ⓘ" Style="{DynamicResource LinkButton}" Margin="6,0,0,0"
+                                    Visibility="{Binding HasDetail, Converter={StaticResource BoolToVis}}"
+                                    Click="ToolActivity_ToggleClick" />
+                        </StackPanel>
+                        <Border Background="{DynamicResource Brush.Surface}" CornerRadius="4" Padding="8,5" Margin="20,5,0,0"
+                                Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="11"
+                                       Foreground="{DynamicResource Brush.TextMuted}" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- Plan card: numbered steps, optional approval gate. -->
+            <DataTemplate DataType="{x:Type vm:PlanCardViewModel}">
+                <Border Style="{DynamicResource CardBorder}" Margin="0,6,12,6" HorizontalAlignment="Left" MaxWidth="320">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="📋" Margin="0,0,6,0" />
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Steps}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <Border Width="20" Height="20" CornerRadius="10" Background="{DynamicResource Brush.AccentMuted}"
+                                                Margin="0,0,8,0" VerticalAlignment="Top">
+                                            <TextBlock Text="{Binding Number}" FontSize="11" HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" MaxWidth="270" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <StackPanel Margin="0,10,0,0"
+                                    Visibility="{Binding RequiresApproval, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="This plan needs your approval before the agent proceeds."
+                                       FontSize="11" Foreground="{DynamicResource Brush.Warn}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                            <Button Content="Approve &amp; continue" Style="{DynamicResource AccentButton}"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding ApproveCommand}" CommandParameter="{Binding}"
+                                    IsEnabled="{Binding IsApproved, Converter={StaticResource Negate}}" />
+                            <TextBlock Text="✓ Approved" Foreground="{DynamicResource Brush.Ok}" Margin="0,4,0,0"
+                                       Visibility="{Binding IsApproved, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- Question card: prose + option buttons. -->
+            <DataTemplate DataType="{x:Type vm:QuestionCardViewModel}">
+                <Border Style="{DynamicResource CardBorder}" Margin="0,6,12,6" HorizontalAlignment="Left" MaxWidth="320">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="❓" Margin="0,0,6,0" />
+                            <TextBlock Text="A quick question" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Question}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                        <ItemsControl ItemsSource="{Binding Options}"
+                                      Visibility="{Binding HasOptions, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding}" Style="{DynamicResource GhostButton}"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,3"
+                                            Command="{Binding DataContext.ChooseCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource Brush.Ok}"
+                                   Visibility="{Binding IsAnswered, Converter={StaticResource BoolToVis}}">
+                            <Run Text="✓ Answered: " /><Run Text="{Binding ChosenAnswer, Mode=OneWay}" FontWeight="SemiBold" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- Error line: message, remedy, and contextual actions. -->
+            <DataTemplate DataType="{x:Type vm:ErrorMessageViewModel}">
+                <Border Background="#22E5484D" BorderBrush="{DynamicResource Brush.Danger}" BorderThickness="1"
+                        CornerRadius="8" Padding="12" Margin="0,6,12,6" HorizontalAlignment="Left" MaxWidth="320">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="⚠" Foreground="{DynamicResource Brush.Danger}" Margin="0,0,6,0" />
+                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" MaxWidth="270" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Remedy}" Foreground="{DynamicResource Brush.TextMuted}" FontSize="12"
+                                   TextWrapping="Wrap" Margin="22,0,0,0"
+                                   Visibility="{Binding HasRemedy, Converter={StaticResource BoolToVis}}" />
+                        <StackPanel Orientation="Horizontal" Margin="22,8,0,0">
+                            <Button Content="Retry" Style="{DynamicResource GhostButton}" Margin="0,0,8,0"
+                                    Command="{Binding RetryCommand}"
+                                    Visibility="{Binding IsRetryable, Converter={StaticResource BoolToVis}}" />
+                            <Button Content="Open Settings" Style="{DynamicResource GhostButton}"
+                                    Command="{Binding OpenSettingsCommand}"
+                                    Visibility="{Binding ShowOpenSettings, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- Onboarding card. -->
+            <DataTemplate DataType="{x:Type vm:OnboardingCardViewModel}">
+                <Border Style="{DynamicResource CardBorder}" Margin="0,6,0,6" Background="{DynamicResource Brush.SurfaceAlt}">
+                    <StackPanel>
+                        <TextBlock Text="Welcome to mojoCAD" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,10">
+                            Chat in plain English to draft and edit your drawing. mojoCAD stages every change
+                            for your review - nothing touches the drawing until you accept it. To begin, add your
+                            OpenRouter API key.
+                        </TextBlock>
+                        <Button Content="Open Settings to add your key" Style="{DynamicResource AccentButton}"
+                                HorizontalAlignment="Left" Command="{Binding OpenSettingsCommand}" />
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- Review card: the heart of the experience. Uses its own UserControl for clarity. -->
+            <DataTemplate DataType="{x:Type vm:ReviewCardViewModel}">
+                <views:ReviewCard Margin="0,6,0,6" />
+            </DataTemplate>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- ================================ Layout ================================ -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />   <!-- top bar -->
+            <RowDefinition Height="*" />      <!-- transcript -->
+            <RowDefinition Height="Auto" />   <!-- composer -->
+            <RowDefinition Height="Auto" />   <!-- footer -->
+        </Grid.RowDefinitions>
+
+        <!-- Top bar -->
+        <Border Grid.Row="0" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1" Padding="12,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Margin="0,0,8,0"
+                             Fill="{Binding ConnectionState, Converter={StaticResource ConnToBrush}}" />
+                    <TextBlock Text="mojoCAD" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding CurrentModelId}" Foreground="{DynamicResource Brush.TextFaint}"
+                           FontSize="11" VerticalAlignment="Center" Margin="10,0" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="2" Content="🗋" Style="{DynamicResource IconButton}" ToolTip="New chat"
+                        Command="{Binding NewChatCommand}" />
+                <Button Grid.Column="3" Content="⚙" Style="{DynamicResource IconButton}" ToolTip="Settings"
+                        Command="{Binding OpenSettingsCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Transcript -->
+        <ScrollViewer x:Name="TranscriptScroll" Grid.Row="1" Style="{DynamicResource MojoScrollViewer}" Padding="12,8">
+            <ItemsControl x:Name="MessageList" ItemsSource="{Binding Messages}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Composer -->
+        <Border Grid.Row="2" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0" Padding="12,10">
+            <StackPanel>
+                <!-- inline error -->
+                <Border Background="#22E5484D" CornerRadius="6" Padding="8,5" Margin="0,0,0,8"
+                        Visibility="{Binding InlineError, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding InlineError}" Foreground="{DynamicResource Brush.Danger}"
+                               FontSize="12" TextWrapping="Wrap" />
+                </Border>
+
+                <!-- context chips row -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <ToggleButton IsChecked="{Binding UseSelectionContext}" Cursor="Hand"
+                                  ToolTip="Attach the current AutoCAD selection as context for the next message">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border x:Name="cb" CornerRadius="12" Padding="10,4" BorderThickness="1"
+                                        Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⊕" Margin="0,0,5,0" FontSize="12" />
+                                        <TextBlock Text="Selection" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="cb" Property="Background" Value="{DynamicResource Brush.AccentMuted}" />
+                                        <Setter TargetName="cb" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                </StackPanel>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="InputBox" Grid.Column="0" Style="{DynamicResource MojoTextBox}"
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="120"
+                             VerticalScrollBarVisibility="Auto"
+                             PreviewKeyDown="InputBox_PreviewKeyDown"
+                             Tag="Ask mojoCAD to draw or edit…" />
+                    <!-- Send / Stop swap based on IsBusy -->
+                    <Button Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Bottom" Width="40" Height="38"
+                            Style="{DynamicResource AccentButton}" Command="{Binding SendCommand}"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                            Content="↑" FontSize="16" ToolTip="Send (Enter)" />
+                    <Button Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Bottom" Width="40" Height="38"
+                            Style="{DynamicResource GhostButton}" Command="{Binding StopCommand}"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"
+                            Content="■" FontSize="14" ToolTip="Stop" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Footer: status + usage -->
+        <Border Grid.Row="3" Background="{DynamicResource Brush.Bg}" Padding="12,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource Brush.TextFaint}" FontSize="11" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding UsageText}" Foreground="{DynamicResource Brush.TextFaint}"
+                           FontSize="11"
+                           Visibility="{Binding UsageText, Converter={StaticResource NullToVis}}" />
+            </Grid>
+        </Border>
+
+        <!-- Settings overlay (an in-panel layer; simpler & more robust than a child window in a palette) -->
+        <Grid x:Name="SettingsOverlay" Grid.RowSpan="4" Background="#CC000000" Visibility="Collapsed">
+            <Border Background="{DynamicResource Brush.Bg}" Margin="8" CornerRadius="12"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                <views:SettingsView x:Name="SettingsHost" />
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
