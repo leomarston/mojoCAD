@@ -1,0 +1,92 @@
+# ---- Build results ----
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# ---- Visual Studio ----
+.vs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.svclog
+*.scc
+
+# ---- .NET ----
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# ---- MSBuild / build outputs ----
+*.binlog
+*.tlog
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.vspscc
+*.vssscc
+
+# ---- AutoCAD specifics ----
+# AutoCAD backup / autosave / temp artefacts that may appear when testing in-product
+*.bak
+*.dwl
+*.dwl2
+*.sv$
+*.ac$
+*.err
+
+# ---- Rider / ReSharper ----
+.idea/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Local secrets / environment ----
+# The plugin stores the OpenRouter API key in the user's %APPDATA% (DPAPI-encrypted),
+# never in the repo. Guard against accidental commits of any local secret files.
+**/secrets.json
+**/appsettings.Local.json
+*.env
+.env.*
+!.env.example
