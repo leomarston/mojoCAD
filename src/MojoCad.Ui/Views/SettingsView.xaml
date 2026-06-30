@@ -121,19 +121,29 @@
                         <TextBlock Text="Model" Style="{StaticResource SectionTitle}" />
 
                         <TextBlock Text="Primary model" Style="{StaticResource FieldLabel}" />
-                        <ComboBox Style="{DynamicResource MojoComboBox}" ItemsSource="{Binding Models}"
-                                  SelectedValue="{Binding SelectedModelId, Mode=TwoWay}" SelectedValuePath="Id"
+                        <!-- Editable: pick from the curated/live list OR type any OpenRouter model id.
+                             Text (not SelectedValue) binds the free text; TextSearch.TextPath keeps the
+                             edit box showing the id when an item is chosen. -->
+                        <ComboBox Style="{DynamicResource MojoEditableComboBox}" ItemsSource="{Binding Models}"
+                                  TextSearch.TextPath="Id"
+                                  Text="{Binding SelectedModelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   ItemContainerStyle="{DynamicResource MojoComboItem}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel>
                                         <TextBlock Text="{Binding Label}" />
+                                        <TextBlock Text="{Binding Id}" FontSize="10" Foreground="{DynamicResource Brush.TextFaint}" />
                                         <TextBlock Text="{Binding Note}" FontSize="10" Foreground="{DynamicResource Brush.TextFaint}"
                                                    Visibility="{Binding Note, Converter={StaticResource NullToVis}}" />
                                     </StackPanel>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                        <TextBlock Margin="0,4,0,0" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource Brush.TextFaint}">
+                            Type any OpenRouter model id (e.g. anthropic/claude-3.7-sonnet) or pick one above.
+                            Use "Refresh models" to pull the live tool-capable list from your key.
+                        </TextBlock>
 
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <Button Content="Refresh models" Style="{DynamicResource GhostButton}"

@@ -47,16 +47,28 @@ namespace MojoCad.Plugin
 
             _paletteSet = new PaletteSet("mojoCAD", PaletteId)
             {
+                // Cursor-style side panel: pin (auto-hide), close, snap-to-edge, the gripper menu,
+                // and use the panel name as the title bar so it reads as one clean column.
                 Style = PaletteSetStyles.ShowAutoHideButton
                         | PaletteSetStyles.ShowCloseButton
-                        | PaletteSetStyles.Snappable,
+                        | PaletteSetStyles.Snappable
+                        | PaletteSetStyles.ShowPropertiesMenu
+                        | PaletteSetStyles.UsePaletteNameAsTitleForSingle,
+                // Allow docking either side and floating; comfortable floor for a chat column.
                 DockEnabled = DockSides.Left | DockSides.Right,
-                MinimumSize = new System.Drawing.Size(360, 480),
-                KeepFocus = true
+                MinimumSize = new System.Drawing.Size(360, 480)
+                // No KeepFocus: it can disrupt command-line interop and isn't needed for typing.
             };
+
+            // A sensible default floating size (docking uses the width); set before it's shown.
+            _paletteSet.Size = new System.Drawing.Size(420, 820);
 
             _view = MojoUi.CreateChatView(services);
             _paletteSet.AddVisual("Chat", _view);
+
+            // Default to docked on the RIGHT, like Cursor's panel. The user can drag it to the
+            // left or float it afterwards; AutoCAD remembers their choice per the palette GUID.
+            try { _paletteSet.Dock = DockSides.Right; } catch { /* dock state is best-effort */ }
         }
     }
 }

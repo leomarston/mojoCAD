@@ -376,6 +376,75 @@
         </Setter>
     </Style>
 
+    <!-- Editable ComboBox: same flat dark shell as MojoComboBox, but the user can TYPE a value
+         (a free-text model id) as well as pick from the list. The template carries a TextBox named
+         PART_EditableTextBox - WPF wires the ComboBox.Text property to it - plus an arrow ToggleButton
+         that opens the popup. IsEditable / StaysOpenOnEdit are baked in so consumers can't forget them. -->
+    <Style x:Key="MojoEditableComboBox" TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="IsEditable" Value="True" />
+        <Setter Property="StaysOpenOnEdit" Value="True" />
+        <Setter Property="IsTextSearchEnabled" Value="True" />
+        <Setter Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="22" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="b" Grid.ColumnSpan="2" CornerRadius="6"
+                                Background="{StaticResource Brush.SurfaceAlt}"
+                                BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" />
+                        <!-- The editable text host. Transparent so the Border shows through. -->
+                        <TextBox x:Name="PART_EditableTextBox" Grid.Column="0"
+                                 Margin="9,0,2,0" Padding="0" VerticalContentAlignment="Center"
+                                 VerticalAlignment="Stretch"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="{StaticResource Brush.Text}"
+                                 CaretBrush="{StaticResource Brush.Text}"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}" />
+                        <!-- Arrow opens the popup; clicking the text area just edits. -->
+                        <ToggleButton x:Name="ToggleButton" Grid.Column="1" Focusable="False"
+                                      ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent">
+                                        <Path HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Data="M 0 0 L 4 4 L 8 0 Z" Fill="{StaticResource Brush.TextMuted}" />
+                                    </Border>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                            <Border Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.BorderStrong}"
+                                    BorderThickness="1" CornerRadius="6" MinWidth="{TemplateBinding ActualWidth}"
+                                    MaxHeight="320" Margin="0,4,0,0">
+                                <ScrollViewer Style="{StaticResource MojoScrollViewer}">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Brush.BorderStrong}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="MojoComboItem" TargetType="ComboBoxItem">
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
         <Setter Property="FontSize" Value="13" />

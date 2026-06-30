@@ -40,6 +40,16 @@ namespace MojoCad.Ui.Views
 
         private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            // Cursor-style "stick to bottom": only auto-scroll when a message is appended AND the user
+            // was already pinned to (or near) the bottom. If they've scrolled up to read earlier history,
+            // leave their position alone so a new bubble doesn't yank the viewport.
+            if (e.Action != NotifyCollectionChangedAction.Add) return;
+
+            const double slack = 24; // px tolerance - a slightly-scrolled view still counts as "at bottom"
+            bool atBottom = TranscriptScroll.ScrollableHeight <= 0
+                            || TranscriptScroll.VerticalOffset >= TranscriptScroll.ScrollableHeight - slack;
+            if (!atBottom) return;
+
             // Defer to render so the new item has measured before we scroll.
             Dispatcher.BeginInvoke(new Action(() => TranscriptScroll.ScrollToEnd()),
                 System.Windows.Threading.DispatcherPriority.Background);

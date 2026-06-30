@@ -320,7 +320,7 @@ namespace MojoCad.Ui.ViewModels
                 HasKey = true;
             }
 
-            _settings.Models.Model = SelectedModelId;
+            _settings.Models.Model = (SelectedModelId ?? string.Empty).Trim();
             _settings.Models.Temperature = Clamp(Temperature, 0.0, 2.0);
             _settings.Models.MaxTokens = Math.Max(256, MaxTokens);
             _settings.Models.FallbackModels = ParseFallbacks(FallbackModels);

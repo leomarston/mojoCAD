@@ -48,6 +48,7 @@ namespace MojoCad.Ui.ViewModels
 
             _settings = _services.Settings.Load();
             CurrentModelId = _settings.Models.Model;
+            _composerModelId = _settings.Models.Model; // seed the inline picker (no persist on init)
             UseSelectionContext = false;
 
             ShowOnboardingIfNeeded();
@@ -70,6 +71,39 @@ namespace MojoCad.Ui.ViewModels
 
         [ObservableProperty]
         private string _currentModelId = string.Empty;
+
+        /// <summary>
+        /// The model shown in the composer's inline picker. Editable: the user can type ANY OpenRouter
+        /// model id here (or pick one from <see cref="KnownModels"/>) and it persists immediately and
+        /// applies to the next turn - exactly like Cursor's model switcher above the input box.
+        /// </summary>
+        [ObservableProperty]
+        private string _composerModelId = string.Empty;
+
+        /// <summary>Curated model ids offered in the composer picker's dropdown (free text still wins).</summary>
+        public ObservableCollection<string> KnownModels { get; } =
+            new ObservableCollection<string>(ModelCatalogDefaults.Recommended.Select(r => r.Id));
+
+        partial void OnComposerModelIdChanged(string value)
+        {
+            var id = (value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(id)) return;
+
+            // No-op when it already matches (seeding/echo) - just mirror the header and avoid disk churn.
+            if (!string.Equals(_settings.Models.Model, id, StringComparison.Ordinal))
+            {
+                // Re-load the on-disk doc before writing so we change ONLY the model id and never clobber
+                // edits the Settings panel may have persisted since this VM last read settings.
+                try
+                {
+                    _settings = _services.Settings.Load();
+                    _settings.Models.Model = id;
+                    _services.Settings.Save(_settings);
+                }
+                catch { /* persistence is best-effort */ }
+            }
+            CurrentModelId = id; // mirror to the header label
+        }
 
         /// <summary>Footer usage line, e.g. "1,204 in / 318 out · $0.0042".</summary>
         [ObservableProperty]
@@ -154,6 +188,7 @@ namespace MojoCad.Ui.ViewModels
             // Re-read settings each turn so changes made in the Settings panel take effect immediately.
             _settings = _services.Settings.Load();
             CurrentModelId = _settings.Models.Model;
+            ComposerModelId = _settings.Models.Model; // keep the inline picker in sync (no re-persist)
 
             var userMsg = new UserMessageViewModel(text);
             if (UseSelectionContext)

@@ -156,7 +156,8 @@
                        Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}" />
 
             <!-- ===== Action bar ===== -->
-            <Border Padding="14,12" Visibility="{Binding IsPending, Converter={StaticResource BoolToVis}}">
+            <Border Padding="14,12" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0"
+                    Visibility="{Binding IsPending, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <Button Content="Accept all" Style="{DynamicResource GhostButton}" Margin="0,0,8,0"
