@@ -114,6 +114,13 @@ namespace MojoCad.Core.Settings
         /// </summary>
         public bool EnableCommandExecution { get; set; }
 
+        /// <summary>
+        /// Set once the palette has been auto-docked to the right on its first-ever creation. After that we
+        /// leave docking alone so AutoCAD's per-GUID layout memory (the user's left-dock / float choice)
+        /// wins on subsequent sessions instead of being forced back to the right every launch.
+        /// </summary>
+        public bool PaletteDockInitialized { get; set; }
+
         public static MojoSettings CreateDefault() => new MojoSettings();
     }
 }

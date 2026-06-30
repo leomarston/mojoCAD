@@ -235,7 +235,8 @@
         </Border>
 
         <!-- Transcript -->
-        <ScrollViewer x:Name="TranscriptScroll" Grid.Row="1" Style="{DynamicResource MojoScrollViewer}" Padding="12,8">
+        <ScrollViewer x:Name="TranscriptScroll" Grid.Row="1" Style="{DynamicResource MojoScrollViewer}" Padding="12,8"
+                      ScrollChanged="TranscriptScroll_ScrollChanged">
             <ItemsControl x:Name="MessageList" ItemsSource="{Binding Messages}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><StackPanel /></ItemsPanelTemplate>
@@ -269,7 +270,7 @@
                               VerticalAlignment="Center"
                               ItemsSource="{Binding KnownModels}"
                               ItemContainerStyle="{DynamicResource MojoComboItem}"
-                              Text="{Binding ComposerModelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              Text="{Binding ComposerModelId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                               ToolTip="Model — type any OpenRouter id or pick one" />
 
                     <ToggleButton Grid.Column="2" IsChecked="{Binding UseSelectionContext}" Cursor="Hand"

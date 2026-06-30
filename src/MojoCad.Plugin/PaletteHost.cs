@@ -66,9 +66,20 @@ namespace MojoCad.Plugin
             _view = MojoUi.CreateChatView(services);
             _paletteSet.AddVisual("Chat", _view);
 
-            // Default to docked on the RIGHT, like Cursor's panel. The user can drag it to the
-            // left or float it afterwards; AutoCAD remembers their choice per the palette GUID.
-            try { _paletteSet.Dock = DockSides.Right; } catch { /* dock state is best-effort */ }
+            // Default to docked on the RIGHT, like Cursor's panel - but ONLY the first time the palette is
+            // ever created. After that, AutoCAD restores the user's own dock/float choice for this GUID, so
+            // forcing Right every session would clobber a left-dock or floating layout they set on purpose.
+            try
+            {
+                var settings = services.Settings.Load();
+                if (!settings.PaletteDockInitialized)
+                {
+                    _paletteSet.Dock = DockSides.Right;
+                    settings.PaletteDockInitialized = true;
+                    services.Settings.Save(settings);
+                }
+            }
+            catch { /* docking + persistence are best-effort; never block showing the panel */ }
         }
     }
 }

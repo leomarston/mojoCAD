@@ -387,7 +387,11 @@
         <Setter Property="Height" Value="34" />
         <Setter Property="IsEditable" Value="True" />
         <Setter Property="StaysOpenOnEdit" Value="True" />
-        <Setter Property="IsTextSearchEnabled" Value="True" />
+        <!-- OFF on purpose: this picker exists for FREE-TEXT model ids. With type-search on, typing an id
+             that is a prefix of a listed one (e.g. "openai/gpt-4" vs "openai/gpt-4o") auto-completes to the
+             neighbour and silently overwrites what the user typed. Off = the edit box keeps exactly the
+             typed text; the dropdown is still selectable by mouse. -->
+        <Setter Property="IsTextSearchEnabled" Value="False" />
         <Setter Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
         <Setter Property="Template">
             <Setter.Value>

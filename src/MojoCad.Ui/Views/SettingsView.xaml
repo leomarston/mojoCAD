@@ -126,7 +126,7 @@
                              edit box showing the id when an item is chosen. -->
                         <ComboBox Style="{DynamicResource MojoEditableComboBox}" ItemsSource="{Binding Models}"
                                   TextSearch.TextPath="Id"
-                                  Text="{Binding SelectedModelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Text="{Binding SelectedModelId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                   ItemContainerStyle="{DynamicResource MojoComboItem}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>

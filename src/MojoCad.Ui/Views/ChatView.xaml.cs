@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,6 +16,11 @@ namespace MojoCad.Ui.Views
     {
         private ChatViewModel? _vm;
 
+        // "Stick to bottom" state. True while the transcript should glue to the newest content; flipped off
+        // the moment the user scrolls up to read history, and back on when they return to the bottom.
+        private bool _autoScroll = true;
+        private const double ScrollSlack = 24; // px tolerance so a near-bottom view still counts as "pinned"
+
         public ChatView()
         {
             InitializeComponent();
@@ -30,29 +33,31 @@ namespace MojoCad.Ui.Views
             _vm = new ChatViewModel(services, Dispatcher, OpenSettings);
             DataContext = _vm;
 
-            // Auto-scroll the transcript to the newest message as the conversation grows.
-            if (MessageList.Items is INotifyCollectionChanged incc)
-                incc.CollectionChanged += OnMessagesChanged;
-
             // Build the Settings view lazily-but-eagerly here so the overlay is ready on first open.
             SettingsHost.Initialize(services, CloseSettings);
         }
 
-        private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        /// <summary>
+        /// Canonical chat "stick to bottom". <see cref="ScrollChangedEventArgs.ExtentHeightChange"/> is non-zero
+        /// when the CONTENT grew - a new bubble, a tool row, OR an assistant message streaming tokens into an
+        /// existing bubble (which is only a property change, never a collection change, so a collection handler
+        /// would miss it). When content grows and we're pinned, glue to the bottom. When it's zero the scroll
+        /// was user-initiated, so we recompute the pin from where they landed: scrolling up unpins, returning
+        /// to the bottom re-pins. Re-entrancy is safe - our ScrollToVerticalOffset raises a follow-up event with
+        /// ExtentHeightChange == 0 that simply re-affirms the pin.
+        /// </summary>
+        private void TranscriptScroll_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            // Cursor-style "stick to bottom": only auto-scroll when a message is appended AND the user
-            // was already pinned to (or near) the bottom. If they've scrolled up to read earlier history,
-            // leave their position alone so a new bubble doesn't yank the viewport.
-            if (e.Action != NotifyCollectionChangedAction.Add) return;
-
-            const double slack = 24; // px tolerance - a slightly-scrolled view still counts as "at bottom"
-            bool atBottom = TranscriptScroll.ScrollableHeight <= 0
-                            || TranscriptScroll.VerticalOffset >= TranscriptScroll.ScrollableHeight - slack;
-            if (!atBottom) return;
-
-            // Defer to render so the new item has measured before we scroll.
-            Dispatcher.BeginInvoke(new Action(() => TranscriptScroll.ScrollToEnd()),
-                System.Windows.Threading.DispatcherPriority.Background);
+            if (e.ExtentHeightChange > 0)
+            {
+                if (_autoScroll)
+                    TranscriptScroll.ScrollToVerticalOffset(TranscriptScroll.ScrollableHeight);
+            }
+            else if (e.VerticalChange != 0 || e.ViewportHeightChange != 0)
+            {
+                _autoScroll = TranscriptScroll.VerticalOffset
+                              >= TranscriptScroll.ScrollableHeight - ScrollSlack;
+            }
         }
 
         private void InputBox_PreviewKeyDown(object sender, KeyEventArgs e)
