@@ -43,8 +43,20 @@ namespace MojoCad.Core.Geometry
             Math.Abs(Y - other.Y) < 1e-9 &&
             Math.Abs(Z - other.Z) < 1e-9;
 
-        public override bool Equals(object obj) => obj is Pt p && Equals(p);
-        public override int GetHashCode() => HashCode.Combine(X, Y, Z);
+        public override bool Equals(object? obj) => obj is Pt p && Equals(p);
+
+        public override int GetHashCode()
+        {
+            // Manual combine: System.HashCode isn't available on .NET Framework 4.8.
+            unchecked
+            {
+                int h = 17;
+                h = h * 31 + X.GetHashCode();
+                h = h * 31 + Y.GetHashCode();
+                h = h * 31 + Z.GetHashCode();
+                return h;
+            }
+        }
         public override string ToString() => $"({X:0.###}, {Y:0.###}, {Z:0.###})";
     }
 

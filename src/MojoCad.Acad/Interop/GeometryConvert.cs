@@ -1,3 +1,4 @@
+using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
 using MojoCad.Core.Geometry;
 
