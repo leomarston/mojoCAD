@@ -13,7 +13,12 @@ namespace MojoCad.Core.Infrastructure
         {
             get
             {
-                var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                // Honour the %APPDATA% environment variable first - that is exactly what this path means,
+                // it lets an admin/user redirect it, and it makes the store unit-testable. Fall back to the
+                // known Roaming folder when the variable is unset (which is the normal Windows default anyway).
+                var appData = Environment.GetEnvironmentVariable("APPDATA");
+                if (string.IsNullOrWhiteSpace(appData))
+                    appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 return Path.Combine(appData, "mojoCAD");
             }
         }
