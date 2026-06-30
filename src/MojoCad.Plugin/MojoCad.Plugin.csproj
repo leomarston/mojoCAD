@@ -36,6 +36,9 @@
     <PackageReference Include="AutoCAD.NET" Version="24.3.0">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
+    <!-- The composition root news up OpenRouterClient (HttpClient ctor arg); net48 needs the
+         in-box System.Net.Http referenced explicitly for that type to be visible. -->
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
 </Project>
