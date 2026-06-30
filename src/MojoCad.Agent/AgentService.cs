@@ -230,11 +230,11 @@ namespace MojoCad.Agent
                 Temperature = context.Models.Temperature,
                 MaxTokens = context.Models.MaxTokens,
                 Stream = true,
-                Provider = new ProviderPrefs
-                {
-                    RequireParameters = true,
-                    DataCollection = context.Models.DenyDataCollection ? "deny" : null
-                },
+                // No provider routing constraints by default. `require_parameters: true` and
+                // `data_collection: "deny"` over-filter and make OpenRouter return
+                // "No endpoints found that can handle the provided parameters" for many models.
+                // (Privacy routing can return later, gated on detecting which providers support it.)
+                Provider = null,
                 Usage = new UsageRequest { Include = true },
                 Reasoning = string.IsNullOrWhiteSpace(context.Models.ReasoningEffort)
                     ? null

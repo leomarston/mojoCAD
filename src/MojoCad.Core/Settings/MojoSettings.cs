@@ -70,21 +70,23 @@ namespace MojoCad.Core.Settings
     /// <summary>Known-good defaults. The live model list is fetched from OpenRouter's /models at runtime.</summary>
     public static class ModelCatalogDefaults
     {
-        public const string DefaultModel = "anthropic/claude-opus-4.8";
+        // Defaults must be model ids that actually exist on OpenRouter and support tool calling.
+        // The live list is fetched via /models ("Refresh models" in Settings); these are just the seed.
+        public const string DefaultModel = "openai/gpt-4o";
 
         public static readonly string[] DefaultFallbacks =
         {
-            "anthropic/claude-sonnet-4.6",
-            "openai/gpt-5.5"
+            "anthropic/claude-3.5-sonnet"
         };
 
         /// <summary>Curated alternatives surfaced first in the model picker before the full /models list loads.</summary>
         public static readonly (string Id, string Label, string Note)[] Recommended =
         {
-            ("anthropic/claude-opus-4.8", "Claude Opus 4.8", "Strongest tool-use & instruction-following. Default for life-safety work."),
-            ("anthropic/claude-sonnet-4.6", "Claude Sonnet 4.6", "Near-Opus quality at lower cost. Good default for everyday drafting."),
-            ("openai/gpt-5.5", "GPT-5.5", "Rock-solid strict tool calling. Primary cross-vendor fallback."),
-            ("google/gemini-3.1-pro-preview", "Gemini 3.1 Pro", "Largest context, cheapest flagship. Use with require_parameters.")
+            ("openai/gpt-4o", "GPT-4o", "Reliable tool calling. Safe default."),
+            ("anthropic/claude-3.5-sonnet", "Claude 3.5 Sonnet", "Strong reasoning & tool use."),
+            ("anthropic/claude-3.7-sonnet", "Claude 3.7 Sonnet", "Newer Claude - use if your key lists it."),
+            ("openai/gpt-4.1", "GPT-4.1", "Use if available."),
+            ("google/gemini-2.5-pro", "Gemini 2.5 Pro", "Large context - use if available.")
         };
     }
 
