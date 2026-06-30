@@ -88,15 +88,17 @@
                                     ToolTip="Show / hide" Command="{Binding ToggleKeyVisibilityCommand}" />
                         </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <Button Content="Test connection" Style="{DynamicResource GhostButton}" Margin="0,0,8,0"
-                                    Command="{Binding TestConnectionCommand}" />
-                            <Button Content="Save key" Style="{DynamicResource AccentButton}" Margin="0,0,8,0"
+                        <!-- WrapPanel (not a horizontal StackPanel) so the buttons never clip off the right
+                             edge of a narrow palette - "Save key" stays visible by wrapping to the next line. -->
+                        <WrapPanel Margin="0,10,0,0">
+                            <Button Content="Save key" Style="{DynamicResource AccentButton}" Margin="0,0,8,8"
                                     Command="{Binding SaveKeyCommand}" />
-                            <Button Content="Remove" Style="{DynamicResource LinkButton}" VerticalAlignment="Center"
+                            <Button Content="Test connection" Style="{DynamicResource GhostButton}" Margin="0,0,8,8"
+                                    Command="{Binding TestConnectionCommand}" />
+                            <Button Content="Remove" Style="{DynamicResource LinkButton}" VerticalAlignment="Center" Margin="0,0,0,8"
                                     Command="{Binding DeleteKeyCommand}"
                                     Visibility="{Binding HasKey, Converter={StaticResource BoolToVis}}" />
-                        </StackPanel>
+                        </WrapPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                             <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center"

@@ -317,6 +317,10 @@ namespace MojoCad.Ui.ViewModels
             };
             ConnectionState = error.Kind == AgentErrorKind.Cancelled ? ConnectionState.Idle : ConnectionState.Error;
             _streamingBubble = null;
+            // An error (including a Stop/cancel) ends the turn - clear the busy state so the composer
+            // returns to Send and isn't stuck showing a dead Stop button. (RunTurnAsync swallows the
+            // cancellation and routes it here, so OnTurnComplete won't run to reset this.)
+            IsBusy = false;
         });
 
         public void OnTurnComplete(TurnUsage usage) => Post(() =>

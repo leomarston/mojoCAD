@@ -61,8 +61,12 @@ namespace MojoCad.Ui.ViewModels
         // ----- API key --------------------------------------------------------------------------
 
         /// <summary>Bound to the PasswordBox via the attached behavior. Starts empty even when a key exists
-        /// (we never round-trip the secret into a control we don't have to).</summary>
+        /// (we never round-trip the secret into a control we don't have to). Notifies the Save/Test commands
+        /// so their buttons enable the moment a key is typed or pasted.</summary>
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SaveKeyCommand))]
+        [NotifyCanExecuteChangedFor(nameof(TestConnectionCommand))]
+        [NotifyCanExecuteChangedFor(nameof(RefreshModelsCommand))]
         private string _apiKey = string.Empty;
 
         /// <summary>When true the key is shown in a normal TextBox instead of a PasswordBox.</summary>
@@ -79,6 +83,7 @@ namespace MojoCad.Ui.ViewModels
         private StatusKind _keyStatusState = StatusKind.Neutral;
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(TestConnectionCommand))]
         private bool _isTesting;
 
         [RelayCommand]
@@ -186,12 +191,16 @@ namespace MojoCad.Ui.ViewModels
         private bool _denyDataCollection;
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(RefreshModelsCommand))]
         private bool _isRefreshingModels;
 
         [ObservableProperty]
         private string? _modelStatus;
 
-        private bool CanRefreshModels() => !IsRefreshingModels && _services.SecureStore.HasApiKey;
+        // Allow refreshing as soon as a key is pasted (even before it's saved) - RefreshModels falls back
+        // to the typed key. Otherwise the button stays dead until Save, which is confusing.
+        private bool CanRefreshModels() =>
+            !IsRefreshingModels && (!string.IsNullOrWhiteSpace(ApiKey) || _services.SecureStore.HasApiKey);
 
         [RelayCommand(CanExecute = nameof(CanRefreshModels))]
         private async Task RefreshModels()
